@@ -199,7 +199,6 @@
         update();
     }
 
-    // 逐雷逻辑核心：自动修正序列
     function refreshZhuLeiLogic() {
         const shouldHaveZl = gC('m_strong') && gC('env_break');
         if (shouldHaveZl) {
@@ -287,14 +286,13 @@
             document.getElementById('e_res').value = p.e_res;
 
             queue = data.queue.map(i => ({ ...i, uid: Math.random() }));
-            refreshZhuLeiLogic(); // 导入后根据当前状态同步逐雷
+            refreshZhuLeiLogic();
             activeIdx = 0;
             update();
         } catch (e) { alert("导入失败，格式错误"); }
     }
 
     function update() {
-        // 处理队友联动取消
         if (!gC('b_yjy')) { document.getElementById('yjy_m1').checked = false; }
         if (!gC('b_ly')) { document.getElementById('ly_ref').value = "1"; document.getElementById('ly_m1').checked = false; }
         if (!gC('b_bj')) { document.getElementById('bj_ref').value = "1"; }
@@ -355,6 +353,8 @@
         if (gC('b_ap')) { a_p += 0.16; a_l.push("阿炮: +16%"); }
         if (gS('s4_set') === 'ry') { a_p += 0.12; a_l.push("如影4件套: +12%"); }
         if (gS('s4_set') === 'lb' && inAbn) { a_p += 0.28; a_l.push("雷暴4件套(感电): +28%"); }
+        // 修改点：加强模式攻击力加成
+        if (isStrong) { a_p += 0.12; a_l.push("加强模式: +12%"); }
         if (gC('b_yjy')) { a_f = Math.min(1200, gV('yjy_atk') * 0.35); a_l.push(`耀嘉音辅助(35%): +${a_f.toFixed(1)} (Max 1200)`); }
         const atk = gV('p_atk') * (1 + a_p) + a_f;
         res.atk = { val: Math.floor(atk), log: a_l.join(' | '), formula: `攻击 = ${gV('p_atk')} × (1 + ${a_p.toFixed(2)}) + ${a_f.toFixed(1)}` };
@@ -362,7 +362,7 @@
         // 2. 倍率乘区
         const tier = cons >= 5 ? 'm5' : (cons >= 3 ? 'm3' : 'm0');
         let actId = item.id;
-        if (!isStrong && actId === 'tq_x') actId = 'tq'; // 自动回退
+        if (!isStrong && actId === 'tq_x') actId = 'tq';
         let bm = SCALING[tier][actId] || 0;
         let em = (isStrong && item.id === 'zj') ? SCALING[tier].zj_ex : 0;
         res.mul = { val: (bm + em).toFixed(1) + "%", log: `档位:${tier} | 基础:${bm}% | 补正:${em}%`, formula: `总倍率 = ${bm}% + ${em}%` };
@@ -415,7 +415,7 @@
             log: `最终双暴: ${(f_cr*100).toFixed(1)}% / ${(f_cd*100).toFixed(1)}%`
         };
 
-        // 5. 防御乘区 (四步法)
+        // 5. 防御乘区
         let shred = 0;
         if (gC('b_nk')) shred += 0.4;
         if (gC('b_bj')) { let br = parseInt(gS('bj_ref')); shred += [0,25,28.75,32.5,36.25,40][br]/100; }

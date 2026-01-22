@@ -49,7 +49,7 @@
 <body>
 
 <div class="col-left">
-    <h2>悠真核心参数</h2>
+    <h2>面板</h2>
     <div class="input-group">
         <label class="label-text">命座等级</label>
         <select id="y_const" onchange="update()">
@@ -59,7 +59,7 @@
     </div>
     
     <div class="input-group">
-        <label class="label-text" style="margin-bottom:10px; font-weight:bold; color:var(--gold)">基础面板设定</label>
+        <label class="label-text" style="margin-bottom:10px; font-weight:bold; color:var(--gold)">基础</label>
         <div class="base-panel-grid">
             <div>
                 <label class="label-text">角色攻击力</label>
@@ -80,20 +80,22 @@
         </div>
     </div>
 
-    <div class="check-item" style="color:var(--cyan); border: 1px solid #00e5ff33; padding: 10px; border-radius: 4px;">
-        <input type="checkbox" id="m_strong" onchange="handleToggleCondition()"> <strong>开启【加强模式】</strong>
+    <div class="input-group">
+        <label class="label-text" style="margin-bottom:10px; font-weight:bold; color:var(--gold)">装备</label>
+        <div class="base-panel-grid">
+            <div>
+                <label class="label-text">电属性伤害加成 (%)</label>
+                <input type="number" id="p_ele_dmg" value="0" oninput="update()">
+            </div>
+            <div>
+                <label class="label-text">穿透值</label>
+                <input type="number" id="p_pen_v" value="0" oninput="update()">
+            </div>
+        </div>
     </div>
 
-    <h2>装备 > 属性加成</h2>
-    <div class="base-panel-grid">
-        <div>
-            <label class="label-text">电属性伤害加成 (%)</label>
-            <input type="number" id="p_ele_dmg" value="0" oninput="update()">
-        </div>
-        <div>
-            <label class="label-text">穿透值</label>
-            <input type="number" id="p_pen_v" value="0" oninput="update()">
-        </div>
+    <div class="check-item" style="color:var(--cyan); border: 1px solid #00e5ff33; padding: 10px; border-radius: 4px; margin-top: 15px;">
+        <input type="checkbox" id="m_strong" onchange="handleToggleCondition()"> <strong>开启【潜能模式】</strong>
     </div>
 
     <h2 style="margin-top: 25px;">武器与驱动盘</h2>
@@ -114,7 +116,7 @@
         <label class="label-text">驱动盘四件套</label>
         <select id="s4_set" onchange="update()">
             <option value="none">无</option>
-            <option value="ry">如影随形 (12%攻 / 15%冲刺增伤)</option>
+            <option value="ry">如影随形 (12%攻12%暴 / 15%冲刺增伤)</option>
             <option value="lb">雷暴重金属 (感电28%攻)</option>
         </select>
     </div>
@@ -355,8 +357,6 @@
         let a_p = 0, a_f = 0, a_l = [`面板: ${gV('p_atk')}`];
         const wp = gS('y_wp');
         if (wp === 'lh') { let v = [0,28,35,42,49,56][ref]; a_p += v/100; a_l.push(`硫磺石(精${ref}): +${v}%`); }
-        
-        // 修正星辉音擎逻辑：星辉音擎加成应作用在“快速支援”之后的全部技能上，而不是“快速支援”本身。
         if (wp === 'xh') { 
             let hasSupportBefore = false;
             for(let k=0; k<idx; k++) if(queue[k].id === 'support') { hasSupportBefore = true; break; }
@@ -364,11 +364,10 @@
                 let v = [0,12,13.8,15.6,17.4,19.2][ref]; a_p += v/100; a_l.push(`星辉音擎(精${ref}): +${v}%`); 
             }
         }
-
         if (gC('b_ap')) { a_p += 0.16; a_l.push("阿炮: +16%"); }
         if (gS('s4_set') === 'ry') { a_p += 0.12; a_l.push("如影4: +12%"); }
         if (gS('s4_set') === 'lb' && inAbn) { a_p += 0.28; a_l.push("雷暴4(感电): +28%"); }
-        if (isStrong) { a_p += 0.12; a_l.push("加强模式: +12%"); }
+        if (isStrong) { a_p += 0.12; a_l.push("潜能模式: +12%"); }
         if (gC('b_yjy')) { a_f = Math.min(1200, gV('yjy_atk') * 0.35); a_l.push(`耀嘉音: +${a_f.toFixed(1)}`); }
         const atk = gV('p_atk') * (1 + a_p) + a_f;
         res.atk = { val: Math.floor(atk), log: a_l.join(' | '), formula: `攻击 = ${gV('p_atk')} × (1 + ${a_p.toFixed(3)}) + ${a_f.toFixed(1)}` };

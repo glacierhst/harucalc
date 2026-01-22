@@ -7,16 +7,18 @@
         :root { --gold: #ffcc00; --cyan: #00e5ff; --bg: #0a0a0a; --card: #161618; --border: #333; --text: #e0e0e0; --red: #ff4444; --green: #00ff88; }
         body { font-family: 'PingFang SC', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; width: 100vw; }
         
-        /* 三栏布局 */
         .col-left { width: 380px; border-right: 1px solid var(--border); overflow-y: auto; padding: 20px; background: #0e0e0e; flex-shrink: 0; }
         .col-mid { width: 350px; border-right: 1px solid var(--border); overflow-y: auto; padding: 20px; background: #0f0f0f; flex-shrink: 0; }
         .col-right { flex: 1; overflow-y: auto; padding: 25px; background: #050505; min-width: 600px; }
 
         h2 { font-size: 1rem; color: var(--gold); border-left: 3px solid var(--gold); padding-left: 10px; margin: 20px 0 15px; text-transform: uppercase; }
         .input-group { margin-bottom: 15px; }
-        label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 6px; }
+        .label-text { display: block; font-size: 0.8rem; color: #888; margin-bottom: 6px; }
         select, input { width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 4px; box-sizing: border-box; font-size: 0.9rem; }
         
+        .base-panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .base-panel-grid div { display: flex; flex-direction: column; }
+
         .check-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 10px; cursor: pointer; }
         .check-item input { width: auto; }
 
@@ -49,61 +51,68 @@
 <div class="col-left">
     <h2>悠真核心参数</h2>
     <div class="input-group">
-        <label>命座等级</label>
+        <label class="label-text">命座等级</label>
         <select id="y_const" onchange="update()">
-            <option value="0">0 命</option><option value="1">1 命</option><option value="2">2 命</option>
-            <option value="3">3 命</option><option value="4">4 命</option><option value="5">5 命</option><option value="6">6 命</option>
+            <option value="0">0 命</option><option value="1">1命</option><option value="2">2命</option>
+            <option value="3">3命</option><option value="4">4命</option><option value="5">5命</option><option value="6">6命</option>
         </select>
     </div>
+    
     <div class="input-group">
-        <label>角色面板 (攻击 / 暴击% / 爆伤%)</label>
-        <div style="display:flex; gap:8px;">
-            <input type="number" id="p_atk" value="3000" oninput="update()">
-            <input type="number" id="p_cr" value="50" oninput="update()">
-            <input type="number" id="p_cd" value="120" oninput="update()">
+        <label class="label-text" style="margin-bottom:10px; font-weight:bold; color:var(--gold)">基础面板设定</label>
+        <div class="base-panel-grid">
+            <div>
+                <label class="label-text">角色攻击力</label>
+                <input type="number" id="p_atk" value="3000" oninput="update()">
+            </div>
+            <div>
+                <label class="label-text">暴击率 (%)</label>
+                <input type="number" id="p_cr" value="50" oninput="update()">
+            </div>
+            <div>
+                <label class="label-text">暴击伤害 (%)</label>
+                <input type="number" id="p_cd" value="120" oninput="update()">
+            </div>
+            <div>
+                <label class="label-text">穿透率 (%)</label>
+                <input type="number" id="p_pen_r" value="0" oninput="update()">
+            </div>
         </div>
     </div>
-    <div class="input-group">
-        <label>穿透值 (副词条固定值)</label>
-        <input type="number" id="p_pen_v" value="0" oninput="update()">
-    </div>
+
     <div class="check-item" style="color:var(--cyan); border: 1px solid #00e5ff33; padding: 10px; border-radius: 4px;">
         <input type="checkbox" id="m_strong" onchange="handleToggleCondition()"> <strong>开启【加强模式】</strong>
     </div>
 
-    <h2>武器与驱动盘</h2>
+    <h2>装备 > 属性加成</h2>
+    <div class="base-panel-grid">
+        <div>
+            <label class="label-text">电属性伤害加成 (%)</label>
+            <input type="number" id="p_ele_dmg" value="0" oninput="update()">
+        </div>
+        <div>
+            <label class="label-text">穿透值</label>
+            <input type="number" id="p_pen_v" value="0" oninput="update()">
+        </div>
+    </div>
+
+    <h2 style="margin-top: 25px;">武器与驱动盘</h2>
     <div class="input-group">
-        <label>悠真武器</label>
+        <label class="label-text">悠真武器</label>
         <select id="y_wp" onchange="update()">
             <option value="none">无武器</option>
             <option value="lh">硫磺石</option>
             <option value="cx">残心青囊</option>
+            <option value="xh">星辉音擎</option>
         </select>
     </div>
     <div class="input-group">
-        <label>武器精炼等级</label>
+        <label class="label-text">武器精炼等级</label>
         <select id="y_ref" onchange="update()"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
     </div>
     <div class="input-group">
-        <label>驱动 5 号位主词条</label>
-        <select id="y_s5" onchange="update()">
-            <option value="dmg">属性伤害 (30%)</option>
-            <option value="pen">穿透率 (24%)</option>
-            <option value="other">其他</option>
-        </select>
-    </div>
-    <div class="input-group">
-        <label>驱动盘两件套</label>
-        <select id="s2_set" onchange="update()">
-            <option value="none">无</option>
-            <option value="lb">雷暴重金属 (10%雷伤)</option>
-            <option value="ht">河豚电音 (8%穿透)</option>
-            <option value="other">其他</option>
-        </select>
-    </div>
-    <div class="input-group">
-        <label>驱动盘四件套</label>
-        <select id="s4_set" onchange="handleS4Change()">
+        <label class="label-text">驱动盘四件套</label>
+        <select id="s4_set" onchange="update()">
             <option value="none">无</option>
             <option value="ry">如影随形 (12%攻 / 15%冲刺增伤)</option>
             <option value="lb">雷暴重金属 (感电28%攻)</option>
@@ -116,20 +125,20 @@
 
     <div class="check-item"><input type="checkbox" id="b_yjy" onchange="update()"> 队友：耀嘉音 (20%增伤/25%爆伤)</div>
     <div id="sub_yjy" style="display:none; padding-left:15px; border-left: 2px solid #444; margin: 10px 0;">
-        <label>耀嘉音面板攻击力</label><input type="number" id="yjy_atk" value="3000" oninput="update()">
+        <label class="label-text">耀嘉音面板攻击力</label><input type="number" id="yjy_atk" value="3000" oninput="update()">
         <div class="check-item" style="margin-top:8px;"><input type="checkbox" id="yjy_m1" onchange="update()"> 耀嘉音 (1命+: 18%减抗)</div>
     </div>
 
     <div class="check-item"><input type="checkbox" id="b_ly" onchange="update()"> 队友：琉音 (40%增伤)</div>
     <div id="sub_ly" style="display:none; padding-left:15px; border-left: 2px solid #444; margin: 10px 0;">
-        <label>武器“昨夜来电”精炼</label>
+        <label class="label-text">武器“昨夜来电”精炼</label>
         <select id="ly_ref" onchange="update()"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
         <div class="check-item" style="margin-top:8px;"><input type="checkbox" id="ly_m1" onchange="update()"> 琉音 (1命+: 15%减抗)</div>
     </div>
 
     <div class="check-item"><input type="checkbox" id="b_bj" onchange="update()"> 队友：扳机</div>
     <div id="sub_bj" style="display:none; padding-left:15px; border-left: 2px solid #444; margin: 10px 0;">
-        <label>武器“索魂影眸”精炼</label>
+        <label class="label-text">武器“索魂影眸”精炼</label>
         <select id="bj_ref" onchange="update()"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
     </div>
 
@@ -140,8 +149,8 @@
     <div class="check-item"><input type="checkbox" id="b_sdx" onchange="update()"> 队友携带驱动盘“山大王” (30%爆伤)</div>
 
     <h2>敌人属性</h2>
-    <div class="input-group"><label>敌人基础防御</label><input type="number" id="e_def" value="952.8" oninput="update()"></div>
-    <div class="input-group"><label>初始抗性%</label><input type="number" id="e_res" value="0" oninput="update()"></div>
+    <div class="input-group"><label class="label-text">敌人基础防御</label><input type="number" id="e_def" value="952.8" oninput="update()"></div>
+    <div class="input-group"><label class="label-text">初始抗性%</label><input type="number" id="e_res" value="0" oninput="update()"></div>
 </div>
 
 <div class="col-mid">
@@ -152,6 +161,7 @@
         <option value="cx3">冲刺攻击·飞弦斩三段</option>
         <option value="tq">强化特殊技：地网</option>
         <option value="tq_x">强化特殊技：地网·巡弋</option>
+        <option value="support">快速支援</option>
         <option value="lx">连携技</option>
         <option value="zj">终结技</option>
         <option value="pg">普攻·落羽</option>
@@ -184,20 +194,14 @@
     let dragIdx = null;
 
     const SCALING = {
-        m0: { cx1:325.1, cx2:333.8, cx3:379.9, tq:899.2, lx:1035.7, zj:3908.6, pg:211.0, zl:83.0, tq_x:1026.8, zj_ex:330 },
-        m3: { cx1:354.7, cx2:364.2, cx3:414.5, tq:981.0, lx:1129.9, zj:4264.0, pg:230.2, zl:90.6, tq_x:1120.2, zj_ex:360 },
-        m5: { cx1:384.3, cx2:394.6, cx3:449.1, tq:1062.8, lx:1224.1, zj:4619.4, pg:249.4, zl:98.2, tq_x:1213.6, zj_ex:390, dcb:1500 }
+        m0: { cx1:325.1, cx2:333.8, cx3:379.9, tq:899.2, lx:1035.7, zj:3908.6, pg:211.0, zl:83.0, tq_x:1026.8, zj_ex:330, support: 169 },
+        m3: { cx1:354.7, cx2:364.2, cx3:414.5, tq:981.0, lx:1129.9, zj:4264.0, pg:230.2, zl:90.6, tq_x:1120.2, zj_ex:360, support: 184.4 },
+        m5: { cx1:384.3, cx2:394.6, cx3:449.1, tq:1062.8, lx:1224.1, zj:4619.4, pg:249.4, zl:98.2, tq_x:1213.6, zj_ex:390, dcb:1500, support: 199.8 }
     };
 
     const gV = id => parseFloat(document.getElementById(id).value) || 0;
     const gC = id => document.getElementById(id).checked;
     const gS = id => document.getElementById(id).value;
-
-    function handleS4Change() {
-        const s4 = gS('s4_set');
-        if (s4 !== 'none') document.getElementById('s2_set').value = s4;
-        update();
-    }
 
     function refreshZhuLeiLogic() {
         const shouldHaveZl = gC('m_strong') && gC('env_break');
@@ -236,8 +240,8 @@
     function exportConfig() {
         const data = {
             params: {
-                const: gS('y_const'), atk: gV('p_atk'), cr: gV('p_cr'), cd: gV('p_cd'), pen_v: gV('p_pen_v'), strong: gC('m_strong'),
-                wp: gS('y_wp'), ref: gS('y_ref'), s5: gS('y_s5'), s2: gS('s2_set'), s4: gS('s4_set'),
+                const: gS('y_const'), atk: gV('p_atk'), cr: gV('p_cr'), cd: gV('p_cd'), pen_r: gV('p_pen_r'), pen_v: gV('p_pen_v'), ele: gV('p_ele_dmg'), strong: gC('m_strong'),
+                wp: gS('y_wp'), ref: gS('y_ref'), s4: gS('s4_set'),
                 env_brk: gC('env_break'), env_abn: gC('env_abnormal'),
                 b_yjy: gC('b_yjy'), yjy_atk: gV('yjy_atk'), yjy_m1: gC('yjy_m1'),
                 b_ly: gC('b_ly'), ly_ref: gS('ly_ref'), ly_m1: gC('ly_m1'),
@@ -260,12 +264,12 @@
             document.getElementById('p_atk').value = p.atk;
             document.getElementById('p_cr').value = p.cr;
             document.getElementById('p_cd').value = p.cd;
+            document.getElementById('p_pen_r').value = p.pen_r || 0;
             document.getElementById('p_pen_v').value = p.pen_v;
+            document.getElementById('p_ele_dmg').value = p.ele || 0;
             document.getElementById('m_strong').checked = p.strong;
             document.getElementById('y_wp').value = p.wp;
             document.getElementById('y_ref').value = p.ref;
-            document.getElementById('y_s5').value = p.s5;
-            document.getElementById('s2_set').value = p.s2;
             document.getElementById('s4_set').value = p.s4;
             document.getElementById('env_break').checked = p.env_brk;
             document.getElementById('env_abnormal').checked = p.env_abn;
@@ -293,9 +297,9 @@
     }
 
     function update() {
-        if (!gC('b_yjy')) { document.getElementById('yjy_m1').checked = false; }
+        if (!gC('b_yjy')) document.getElementById('yjy_m1').checked = false;
         if (!gC('b_ly')) { document.getElementById('ly_ref').value = "1"; document.getElementById('ly_m1').checked = false; }
-        if (!gC('b_bj')) { document.getElementById('bj_ref').value = "1"; }
+        if (!gC('b_bj')) document.getElementById('bj_ref').value = "1";
 
         document.getElementById('sub_yjy').style.display = gC('b_yjy') ? 'block' : 'none';
         document.getElementById('sub_ly').style.display = gC('b_ly') ? 'block' : 'none';
@@ -349,15 +353,25 @@
 
         // 1. 攻击力乘区
         let a_p = 0, a_f = 0, a_l = [`面板: ${gV('p_atk')}`];
-        if (gS('y_wp') === 'lh') { let v = [0,28,35,42,49,56][ref]; a_p += v/100; a_l.push(`硫磺石(精${ref}): +${v}%`); }
+        const wp = gS('y_wp');
+        if (wp === 'lh') { let v = [0,28,35,42,49,56][ref]; a_p += v/100; a_l.push(`硫磺石(精${ref}): +${v}%`); }
+        
+        // 修正星辉音擎逻辑：星辉音擎加成应作用在“快速支援”之后的全部技能上，而不是“快速支援”本身。
+        if (wp === 'xh') { 
+            let hasSupportBefore = false;
+            for(let k=0; k<idx; k++) if(queue[k].id === 'support') { hasSupportBefore = true; break; }
+            if (hasSupportBefore && item.id !== 'support') {
+                let v = [0,12,13.8,15.6,17.4,19.2][ref]; a_p += v/100; a_l.push(`星辉音擎(精${ref}): +${v}%`); 
+            }
+        }
+
         if (gC('b_ap')) { a_p += 0.16; a_l.push("阿炮: +16%"); }
-        if (gS('s4_set') === 'ry') { a_p += 0.12; a_l.push("如影4件套: +12%"); }
-        if (gS('s4_set') === 'lb' && inAbn) { a_p += 0.28; a_l.push("雷暴4件套(感电): +28%"); }
-        // 修改点：加强模式攻击力加成
+        if (gS('s4_set') === 'ry') { a_p += 0.12; a_l.push("如影4: +12%"); }
+        if (gS('s4_set') === 'lb' && inAbn) { a_p += 0.28; a_l.push("雷暴4(感电): +28%"); }
         if (isStrong) { a_p += 0.12; a_l.push("加强模式: +12%"); }
-        if (gC('b_yjy')) { a_f = Math.min(1200, gV('yjy_atk') * 0.35); a_l.push(`耀嘉音辅助(35%): +${a_f.toFixed(1)} (Max 1200)`); }
+        if (gC('b_yjy')) { a_f = Math.min(1200, gV('yjy_atk') * 0.35); a_l.push(`耀嘉音: +${a_f.toFixed(1)}`); }
         const atk = gV('p_atk') * (1 + a_p) + a_f;
-        res.atk = { val: Math.floor(atk), log: a_l.join(' | '), formula: `攻击 = ${gV('p_atk')} × (1 + ${a_p.toFixed(2)}) + ${a_f.toFixed(1)}` };
+        res.atk = { val: Math.floor(atk), log: a_l.join(' | '), formula: `攻击 = ${gV('p_atk')} × (1 + ${a_p.toFixed(3)}) + ${a_f.toFixed(1)}` };
 
         // 2. 倍率乘区
         const tier = cons >= 5 ? 'm5' : (cons >= 3 ? 'm3' : 'm0');
@@ -368,28 +382,26 @@
         res.mul = { val: (bm + em).toFixed(1) + "%", log: `档位:${tier} | 基础:${bm}% | 补正:${em}%`, formula: `总倍率 = ${bm}% + ${em}%` };
 
         // 3. 增伤乘区
-        let db = 0, d_l = [];
-        if (gS('y_s5') === 'dmg') { db += 0.3; d_l.push("5号位(属性伤): +30%"); }
-        if (gS('s2_set') === 'lb') { db += 0.1; d_l.push("雷暴2件套: +10%"); }
-        if (inBrk || inAbn) { db += 0.4; d_l.push("失衡/异常状态: +40%"); }
+        let db = gV('p_ele_dmg') / 100, d_l = [`面板增伤: +${gV('p_ele_dmg')}%`];
+        if (inBrk || inAbn) { db += 0.4; d_l.push("失衡/异常: +40%"); }
         if (gC('b_yjy')) { db += 0.2; d_l.push("耀嘉音: +20%"); }
         if (gC('b_ly')) { db += 0.4; d_l.push("琉音: +40%"); }
-        if (gC('b_mg')) { db += 0.18; d_l.push("月光4件套: +18%"); }
-        if (gC('b_jy')) { db += 0.24; d_l.push("佳音4件套: +24%"); }
+        if (gC('b_mg')) { db += 0.18; d_l.push("月光4: +18%"); }
+        if (gC('b_jy')) { db += 0.24; d_l.push("佳音4: +24%"); }
         
         const isCx = item.id.startsWith('cx') && !item.isZl;
         if (isCx) {
-            if (gS('s4_set') === 'ry') { db += 0.15; d_l.push("如影(冲刺增益): +15%"); }
+            if (gS('s4_set') === 'ry') { db += 0.15; d_l.push("如影(冲刺加成): +15%"); }
             if (cons >= 2) {
                 let lastSpIdx = -1;
                 for(let k=0; k<idx; k++) if(queue[k].id==='lx' || queue[k].id==='zj') lastSpIdx = k;
                 if(lastSpIdx !== -1) {
                     let count = 0;
                     for(let m=lastSpIdx+1; m<idx; m++) if(queue[m].id.startsWith('cx') && !queue[m].isZl) count++;
-                    if(count < 7) { db += 0.5; d_l.push(`悠真2命Buff(第${count+1}次): +50%`); }
+                    if(count < 7) { db += 0.5; d_l.push(`2命Buff(第${count+1}次): +50%`); }
                 }
             }
-            if (gS('y_wp') === 'cx') { let v = [0,40,46,52,58,64][ref]; db += v/100; d_l.push(`残心青囊: +${v}%`); }
+            if (wp === 'cx') { let v = [0,40,46,52,58,64][ref]; db += v/100; d_l.push(`残心青囊: +${v}%`); }
         }
         res.dmg = { val: (1+db).toFixed(3), log: d_l.join(' | '), formula: `增伤系数 = 1 + ${db.toFixed(3)}` };
 
@@ -398,19 +410,19 @@
         if (gS('s4_set') === 'ry') { cr += 12; cr_l.push("如影4: +12%"); }
         if (gC('b_nk')) { cr += 15; cr_l.push("妮可: +15%"); }
         if (isCx || (isStrong && item.id==='zj')) { cr += 25; cd += 72; cr_l.push("自身天赋: +25%"); cd_l.push("自身天赋: +72%"); }
-        if (gS('y_wp') === 'cx') {
-            let v = [0,10,11.5,13,14.5,16][ref]; cr += v; cr_l.push(`武器基础: +${v}%`);
+        if (wp === 'cx') {
+            let v = [0,10,11.5,13,14.5,16][ref]; cr += v; cr_l.push(`武器: +${v}%`);
             if(inBrk || inAbn) { cr += v; cr_l.push("武器条件: +"+v+"%"); }
         }
         if (gC('b_yjy')) { cd += 25; cd_l.push("耀嘉音: +25%"); }
         if (gC('b_sdx')) { cd += 30; cd_l.push("山大王: +30%"); }
-        if (gC('b_ly')) { let lr = parseInt(gS('ly_ref')); let v=[0,30,34.5,39,43.5,48][lr]; cd += v; cd_l.push(`昨夜来电(精${lr}): +${v}%`); }
+        if (gC('b_ly')) { let lr = parseInt(gS('ly_ref')); let v=[0,30,34.5,39,43.5,48][lr]; cd += v; cd_l.push(`昨夜来电: +${v}%`); }
         
         let f_cr = Math.min(100, cr)/100, f_cd = cd/100;
         res.crit_zone = {
             val_exp: (1 + f_cr * f_cd).toFixed(3),
-            cr_f: `暴击率 = ${cr_l.join(' + ')} = <b>${(f_cr*100).toFixed(1)}%</b>`,
-            cd_f: `暴击伤害 = ${cd_l.join(' + ')} = <b>${(f_cd*100).toFixed(1)}%</b>`,
+            cr_f: `暴率 = ${cr_l.join(' + ')} = <b>${(f_cr*100).toFixed(1)}%</b>`,
+            cd_f: `爆伤 = ${cd_l.join(' + ')} = <b>${(f_cd*100).toFixed(1)}%</b>`,
             exp_f: `期望 = 1 + ${f_cr.toFixed(3)} × ${f_cd.toFixed(3)} = <b>${(1 + f_cr * f_cd).toFixed(3)}</b>`,
             log: `最终双暴: ${(f_cr*100).toFixed(1)}% / ${(f_cd*100).toFixed(1)}%`
         };
@@ -419,11 +431,10 @@
         let shred = 0;
         if (gC('b_nk')) shred += 0.4;
         if (gC('b_bj')) { let br = parseInt(gS('bj_ref')); shred += [0,25,28.75,32.5,36.25,40][br]/100; }
-        let pr = (gS('y_s5')==='pen' ? 0.24 : 0);
-        if (gS('s2_set') === 'ht') pr += 0.08;
+        let pr = gV('p_pen_r')/100;
         let pv = gV('p_pen_v'), ed = gV('e_def');
         let s1 = ed * (1 - shred), s2 = s1 * (1 - pr), s3 = Math.max(0, s2 - pv), f_def = 794 / (s3 + 794);
-        res.def = { val: f_def.toFixed(4), log: `减防:${(shred*100).toFixed(1)}% | 穿透率:${(pr*100).toFixed(1)}%`, formula: `1. 减防后: ${s1.toFixed(1)}\n2. 穿透率后: ${s2.toFixed(1)}\n3. 减去穿透值: ${s3.toFixed(1)}\n4. 最终系数: 794 / (${s3.toFixed(1)} + 794) = <b>${f_def.toFixed(4)}</b>` };
+        res.def = { val: f_def.toFixed(4), log: `减防:${(shred*100).toFixed(1)}% | 穿透率:${(pr*100).toFixed(1)}%`, formula: `1. 减防后: ${s1.toFixed(1)}\n2. 穿透率后: ${s2.toFixed(1)}\n3. 减穿透值: ${s3.toFixed(1)}\n4. 系数: 794/(${s3.toFixed(1)}+794) = <b>${f_def.toFixed(4)}</b>` };
 
         // 6. 抗性乘区
         let res_b = gV('e_res')/100, res_s = 0;

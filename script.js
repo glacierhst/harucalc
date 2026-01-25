@@ -125,7 +125,6 @@ function update() {
     qBox.innerHTML = '';
     let tCrit = 0, tExp = 0;
 
-    // --- 新增：占比分类统计变量 ---
     const categories = {
         cx: { name: "冲刺攻击和逐雷", total: 0, color: "bg-cx" },
         tq: { name: "强化特殊技", total: 0, color: "bg-tq" },
@@ -139,7 +138,6 @@ function update() {
         const calc = calculateDamage(item, i);
         tCrit += calc.crit; tExp += calc.exp;
 
-        // --- 新增：归类逻辑 ---
         let cat = "pg";
         if (item.id.startsWith('cx') || item.id === 'zl') cat = "cx";
         else if (item.id.startsWith('tq')) cat = "tq";
@@ -165,18 +163,20 @@ function update() {
         qBox.appendChild(div);
     });
 
-    // 更新总数显示
     document.getElementById('total_crit').innerText = Math.floor(tCrit).toLocaleString();
     document.getElementById('total_exp').innerText = Math.floor(tExp).toLocaleString();
 
-    // --- 新增：渲染占比图表 ---
     const chartCont = document.getElementById('damage_chart');
     const chartBars = document.getElementById('chart_bars');
     if (tExp > 0) {
         chartCont.style.display = 'block';
-        chartBars.innerHTML = Object.values(categories).map(c => {
+        // 修改点：转为数组并按 total 降序排列
+        const sortedCats = Object.values(categories)
+            .filter(c => c.total > 0)
+            .sort((a, b) => b.total - a.total);
+
+        chartBars.innerHTML = sortedCats.map(c => {
             const pct = ((c.total / tExp) * 100).toFixed(1);
-            if (c.total <= 0) return '';
             return `
                 <div class="chart-item">
                     <div class="chart-label"><span>${c.name}</span><span>${pct}%</span></div>
@@ -187,7 +187,6 @@ function update() {
         chartCont.style.display = 'none';
     }
 
-    // 处理选中详情
     if (activeIdx >= 0 && queue[activeIdx]) {
         const current = calculateDamage(queue[activeIdx], activeIdx);
         document.getElementById('selected_detail_summary').style.display = 'flex';

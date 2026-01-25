@@ -139,6 +139,11 @@
 
 <div class="col-mid">
     <h2>连招序列</h2>
+    <div id="q_list"></div>
+    
+    <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
+    
+    <label class="label-text">选择动作</label>
     <select id="sk_sel">
         <option value="cx1">冲刺攻击·飞弦斩一段</option>
         <option value="cx2">冲刺攻击·飞弦斩二段</option>
@@ -154,7 +159,7 @@
         <option value="dcb">电磁爆 (仅6命)</option>
     </select>
     <button class="btn-add" onclick="addSkill()">+ 添加到队列</button>
-    <div id="q_list"></div>
+    
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
         <button class="btn-action" onclick="exportConfig()">导出参数配置</button>
         <button class="btn-action" onclick="importConfig()">导入参数配置</button>
@@ -193,7 +198,6 @@
         const inBrk = gC('env_break');
         const isStrong = gC('m_strong');
         
-        // 自动转换地网与巡弋
         if (isStrong) {
             for (let i = 0; i < queue.length; i++) {
                 if (queue[i].id === 'tq' || queue[i].id === 'tq_x') {
@@ -217,7 +221,6 @@
             }
         }
 
-        // 逐雷逻辑
         if (inBrk && isStrong) {
             let newQ = [];
             for (let i = 0; i < queue.length; i++) {
@@ -493,8 +496,8 @@
         };
 
         const base = atk * (bm + em)/100 * (1 + db_val) * fdef * fres * fvun;
-        res.crit = base * (1 + fcd); 
-        res.exp = base * (1 + fcr * fcd); 
+        res.crit = base * (1 + res.crit_zone.fcd_pure); 
+        res.exp = base * (1 + (Math.min(100, cr)/100) * res.crit_zone.fcd_pure); 
         res.name = item.name;
         return res;
     }
@@ -516,13 +519,16 @@
             <div class="factor-card">
                 <div class="factor-header"><span class="factor-title">4. 双暴乘区 (Critical)</span><span class="factor-val">x${res.crit_zone.val_exp}</span></div>
                 <div class="formula">${res.crit_zone.cr_f}\n${res.crit_zone.cd_f}\n${res.crit_zone.exp_f}</div>
+                <span class="tag">基于期望伤害计算</span>
             </div>
-            ${makeCard("5. 防御区 (Defense) - 详细步骤", res.def.val, res.def.formula, res.def.log)}
+            ${makeCard("5. 防御乘区 (Defense)", res.def.val, res.def.formula, res.def.log)}
             ${makeCard("6. 抗性乘区 (Resistance)", res.res.val, res.res.formula, res.res.log)}
-            ${makeCard("7. 失衡易伤区 (Vulnerability)", res.vun.val, res.vun.formula, res.vun.log)}`;
+            ${makeCard("7. 失衡易伤 (Vulnerability)", res.vun.val, res.vun.formula, res.vun.log)}
+        `;
     }
 
-    update();
+    window.onload = update;
 </script>
+
 </body>
 </html>

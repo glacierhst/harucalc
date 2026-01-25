@@ -207,7 +207,7 @@ function calculateDamage(item, idx) {
     const inAbn = gC('env_abnormal');
     const res = {};
 
-    // 1. 攻击区
+    // 1. 攻击区 (保持不变)
     let ap_list = []; 
     let ap_val = 0;
     if (gS('y_wp')==='lh') { let v=[0,28,35,42,49,56][ref]; ap_val+=v/100; ap_list.push(`硫磺石(${v}%)`); }
@@ -234,7 +234,7 @@ function calculateDamage(item, idx) {
         log: `局内加成: ${(ap_val*100).toFixed(1)}% | 固定值: ${af_val.toFixed(0)}` 
     };
 
-    // 2. 倍率区
+    // 2. 倍率区 (保持不变)
     const tier = cons >= 5 ? 'm5' : (cons >= 3 ? 'm3' : 'm0');
     let actId = item.id;
     let bm = SCALING[tier][actId] || 0;
@@ -246,7 +246,7 @@ function calculateDamage(item, idx) {
         log: `档位: ${tier}` 
     };
 
-    // 3. 增伤区
+    // 3. 增伤区 (保持不变)
     let db_list = [`面板(${gV('p_ele_dmg')}%)`];
     let db_val = gV('p_ele_dmg')/100;
     if (inBrk || inAbn) { db_val += 0.4; db_list.push("环境失衡/异常(40%)"); }
@@ -276,7 +276,7 @@ function calculateDamage(item, idx) {
         log: `总增伤: ${(db_val*100).toFixed(1)}%`
     };
 
-    // 4. 双暴区
+    // 4. 双暴区 (保持不变)
     let cr_list = [`面板(${gV('p_cr')}%)`], cd_list = [`面板(${gV('p_cd')}%)`];
     let cr = gV('p_cr'), cd = gV('p_cd');
     if (gS('s4_set')==='ry') { cr += 12; cr_list.push("如影4(12%)"); }
@@ -303,9 +303,10 @@ function calculateDamage(item, idx) {
         fcr_pure: fcr
     };
 
-    // 5. 防御区
+    // 5. 防御区 (修改：添加青衣减防)
     let shred_list = []; let shred_val = 0;
     if (gC('b_nk')) { shred_val += 0.4; shred_list.push("妮可(40%)"); }
+    if (gC('b_qy') && gS('qy_const') >= 1) { shred_val += 0.15; shred_list.push("青衣1命(15%)"); } // 新增
     if (gC('b_bj') && gS('bj_wp_select') === 'sh') { 
         let v = [0,25,28.75,32.5,36.25,40][gV('bj_ref')]/100; 
         shred_val += v; shred_list.push(`索魂影眸(${(v*100).toFixed(2)}%)`); 
@@ -321,7 +322,7 @@ function calculateDamage(item, idx) {
         log: `总减防: ${(shred_val*100).toFixed(1)}% | 穿透: ${pr*100}% / ${pv}` 
     };
 
-    // 6. 抗性区
+    // 6. 抗性区 (保持不变)
     let res_b = gV('e_res')/100;
     let rs_list = []; let rs_val = 0;
     if(gC('b_yjy') && gS('yjy_const')>=1) { rs_val += 0.18; rs_list.push("耀嘉音1命(18%)"); }
@@ -335,7 +336,7 @@ function calculateDamage(item, idx) {
         log: `净抗性: ${(res_b - rs_val)*100}%` 
     };
 
-    // 7. 失衡易伤区
+    // 7. 失衡易伤区 (修改：添加青衣失衡易伤)
     let vun_b = inBrk ? gV('e_vun')/100 : 1.0;
     let vs_list = []; let vs_val = 0;
     if (gC('b_bj')) {
@@ -345,6 +346,10 @@ function calculateDamage(item, idx) {
     if (gC('b_ly') && inBrk) {
         vs_val += 0.3; vs_list.push("琉音(30%)");
         if(gS('ly_const') >= 2) { vs_val += 0.2; vs_list.push("琉音2命(20%)"); }
+    }
+    if (gC('b_qy') && inBrk) { // 新增
+        vs_val += 0.8; vs_list.push("青衣(80%)");
+        if(gS('qy_const') >= 2) { vs_val += 0.28; vs_list.push("青衣2命(28%)"); }
     }
     let fvun = vun_b + vs_val;
     res.vun = { 

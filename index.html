@@ -89,6 +89,16 @@
         <select id="bj_ref" onchange="update()"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
     </div>
 
+    <div class="check-item"><input type="checkbox" id="b_qy" onchange="handleTeammateToggle('qy')"> 队友：青衣</div>
+    <div id="sub_qy" style="display:none; padding-left:15px; border-left: 2px solid #444; margin-bottom:10px;">
+        <label class="label-text">命座</label>
+        <select id="qy_const" onchange="update()">
+            <option value="0">0命</option>
+            <option value="1">1命及以上 (提供减防)</option>
+            <option value="2">2命及以上 (额外易伤)</option>
+        </select>
+    </div>
+
     <div class="check-item"><input type="checkbox" id="b_nk" onchange="update()"> 队友：妮可</div>
     <div class="check-item"><input type="checkbox" id="b_ap" onchange="update()"> 队友携带音擎“阿炮”</div>
     <div class="check-item"><input type="checkbox" id="b_mg" onchange="update()"> 队友携带驱动盘“月光”</div>

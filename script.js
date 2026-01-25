@@ -79,6 +79,7 @@ function addSkill() {
 
 function clearQueue() { queue = []; activeIdx = -1; update(); }
 
+// 修改导出函数：添加青衣相关字段
 function exportConfig() {
     const data = {
         params: {
@@ -88,6 +89,7 @@ function exportConfig() {
             b_yjy: gC('b_yjy'), yjy_atk: gV('yjy_atk'), yjy_const: gS('yjy_const'),
             b_ly: gC('b_ly'), ly_const: gS('ly_const'), ly_ref: gS('ly_ref'), ly_wp_select: gS('ly_wp_select'),
             b_bj: gC('b_bj'), bj_const: gS('bj_const'), bj_ref: gS('bj_ref'), bj_wp_select: gS('bj_wp_select'),
+            b_qy: gC('b_qy'), qy_const: gS('qy_const'), // 新增青衣导出
             b_nk: gC('b_nk'), b_ap: gC('b_ap'), b_mg: gC('b_mg'), b_jy: gC('b_jy'), b_sdx: gC('b_sdx'),
             e_def: gV('e_def'), e_res: gV('e_res'), e_vun: gV('e_vun')
         },
@@ -96,30 +98,77 @@ function exportConfig() {
     navigator.clipboard.writeText(JSON.stringify(data)).then(() => alert("配置已导出至剪贴板"));
 }
 
+// 修改导入函数：通过 Optional Chaining 确保兼容旧版配置
 function importConfig() {
     const t = prompt("粘贴配置JSON:");
     if (!t) return;
     try {
         const data = JSON.parse(t);
+        if (!data || !data.params) throw new Error("无效的配置格式");
+
         const p = data.params;
-        for(let k in p) {
+        Object.keys(p).forEach(k => {
             const el = document.getElementById(k);
-            if(el) {
-                if(el.type === 'checkbox') el.checked = p[k];
-                else el.value = p[k];
+            if (el) {
+                if (el.type === 'checkbox') {
+                    // 确保布尔值正确映射
+                    el.checked = (p[k] === true || p[k] === "true");
+                } else {
+                    // 核心修复：强制转为字符串，确保 select/input 能正确识别
+                    el.value = String(p[k]);
+                }
             }
+        });
+
+        // 队列处理增加防御性
+        if (data.queue && Array.isArray(data.queue)) {
+            queue = data.queue.map(i => ({ 
+                id: String(i.id), 
+                name: String(i.name), 
+                isZl: !!i.isZl, 
+                uid: Math.random() 
+            }));
+        } else {
+            queue = [];
         }
-        queue = data.queue.map(i => ({ ...i, uid: Math.random() }));
-        refreshZhuLeiLogic();
-        activeIdx = 0;
-        update();
-    } catch(e) { alert("导入失败，格式错误"); }
+
+        // 兼容性修正：由于旧 JSON 缺少青衣字段，如果未定义则初始化
+        if (p.b_qy === undefined) {
+            const b_qy = document.getElementById('b_qy');
+            if (b_qy) b_qy.checked = false;
+        }
+
+        if (typeof refreshZhuLeiLogic === "function") refreshZhuLeiLogic();
+        activeIdx = queue.length > 0 ? 0 : -1;
+        
+        // 关键：延迟执行 update 确保 DOM 状态完全同步
+        setTimeout(() => {
+            try {
+                update();
+                alert("导入成功！");
+            } catch (err) {
+                console.error("Update fail:", err);
+                alert("导入部分成功，但渲染出错，请检查配置项");
+            }
+        }, 10);
+        
+    } catch(e) { 
+        console.error("Import Error:", e);
+        alert("导入失败：JSON 解析错误"); 
+    }
 }
 
 function update() {
-    document.getElementById('sub_yjy').style.display = gC('b_yjy') ? 'block' : 'none';
-    document.getElementById('sub_ly').style.display = gC('b_ly') ? 'block' : 'none';
-    document.getElementById('sub_bj').style.display = gC('b_bj') ? 'block' : 'none';
+// 增加安全检查，防止 DOM 缺失时报错
+    const safeSetDisplay = (id, bool) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = bool ? 'block' : 'none';
+    };
+
+    safeSetDisplay('sub_yjy', gC('b_yjy'));
+    safeSetDisplay('sub_ly', gC('b_ly'));
+    safeSetDisplay('sub_bj', gC('b_bj'));
+    safeSetDisplay('sub_qy', gC('b_qy'));
 
     const qBox = document.getElementById('q_list');
     qBox.innerHTML = '';
@@ -207,7 +256,7 @@ function calculateDamage(item, idx) {
     const inAbn = gC('env_abnormal');
     const res = {};
 
-    // 1. 攻击区 (保持不变)
+    // 1. 攻击区
     let ap_list = []; 
     let ap_val = 0;
     if (gS('y_wp')==='lh') { let v=[0,28,35,42,49,56][ref]; ap_val+=v/100; ap_list.push(`硫磺石(${v}%)`); }
@@ -234,7 +283,7 @@ function calculateDamage(item, idx) {
         log: `局内加成: ${(ap_val*100).toFixed(1)}% | 固定值: ${af_val.toFixed(0)}` 
     };
 
-    // 2. 倍率区 (保持不变)
+    // 2. 倍率区
     const tier = cons >= 5 ? 'm5' : (cons >= 3 ? 'm3' : 'm0');
     let actId = item.id;
     let bm = SCALING[tier][actId] || 0;
@@ -246,7 +295,7 @@ function calculateDamage(item, idx) {
         log: `档位: ${tier}` 
     };
 
-    // 3. 增伤区 (保持不变)
+    // 3. 增伤区
     let db_list = [`面板(${gV('p_ele_dmg')}%)`];
     let db_val = gV('p_ele_dmg')/100;
     if (inBrk || inAbn) { db_val += 0.4; db_list.push("环境失衡/异常(40%)"); }
@@ -276,7 +325,7 @@ function calculateDamage(item, idx) {
         log: `总增伤: ${(db_val*100).toFixed(1)}%`
     };
 
-    // 4. 双暴区 (保持不变)
+    // 4. 双暴区
     let cr_list = [`面板(${gV('p_cr')}%)`], cd_list = [`面板(${gV('p_cd')}%)`];
     let cr = gV('p_cr'), cd = gV('p_cd');
     if (gS('s4_set')==='ry') { cr += 12; cr_list.push("如影4(12%)"); }
@@ -303,7 +352,7 @@ function calculateDamage(item, idx) {
         fcr_pure: fcr
     };
 
-    // 5. 防御区 (修改：添加青衣减防)
+    // 5. 防御区
     let shred_list = []; let shred_val = 0;
     if (gC('b_nk')) { shred_val += 0.4; shred_list.push("妮可(40%)"); }
     if (gC('b_qy') && gS('qy_const') >= 1) { shred_val += 0.15; shred_list.push("青衣1命(15%)"); } // 新增
@@ -322,7 +371,7 @@ function calculateDamage(item, idx) {
         log: `总减防: ${(shred_val*100).toFixed(1)}% | 穿透: ${pr*100}% / ${pv}` 
     };
 
-    // 6. 抗性区 (保持不变)
+    // 6. 抗性区
     let res_b = gV('e_res')/100;
     let rs_list = []; let rs_val = 0;
     if(gC('b_yjy') && gS('yjy_const')>=1) { rs_val += 0.18; rs_list.push("耀嘉音1命(18%)"); }
@@ -336,7 +385,7 @@ function calculateDamage(item, idx) {
         log: `净抗性: ${(res_b - rs_val)*100}%` 
     };
 
-    // 7. 失衡易伤区 (修改：添加青衣失衡易伤)
+    // 7. 失衡易伤区 (修改：加入青衣易伤)
     let vun_b = inBrk ? gV('e_vun')/100 : 1.0;
     let vs_list = []; let vs_val = 0;
     if (gC('b_bj')) {
@@ -347,7 +396,7 @@ function calculateDamage(item, idx) {
         vs_val += 0.3; vs_list.push("琉音(30%)");
         if(gS('ly_const') >= 2) { vs_val += 0.2; vs_list.push("琉音2命(20%)"); }
     }
-    if (gC('b_qy') && inBrk) { // 新增
+    if (gC('b_qy') && inBrk) { // 新增青衣易伤
         vs_val += 0.8; vs_list.push("青衣(80%)");
         if(gS('qy_const') >= 2) { vs_val += 0.28; vs_list.push("青衣2命(28%)"); }
     }

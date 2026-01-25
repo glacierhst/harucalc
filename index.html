@@ -149,6 +149,8 @@
         <option value="lx">连携技</option>
         <option value="zj">终结技</option>
         <option value="pg">普攻·落羽</option>
+        <option value="pg4">普攻·穿云第四段</option>
+        <option value="pg5">普攻·穿云第五段</option>
         <option value="dcb">电磁爆 (仅6命)</option>
     </select>
     <button class="btn-add" onclick="addSkill()">+ 添加到队列</button>
@@ -178,9 +180,9 @@
     let dragIdx = null;
 
     const SCALING = {
-        m0: { cx1:325.1, cx2:333.8, cx3:379.9, tq:899.2, lx:1035.7, zj:3908.6, pg:211.0, zl:83.0, tq_x:1026.8, zj_ex:473, support: 169 },
-        m3: { cx1:354.7, cx2:364.2, cx3:414.5, tq:981.0, lx:1129.9, zj:4264.0, pg:230.2, zl:90.6, tq_x:1120.2, zj_ex:516, support: 184.4 },
-        m5: { cx1:384.3, cx2:394.6, cx3:449.1, tq:1062.8, lx:1224.1, zj:4619.4, pg:249.4, zl:98.2, tq_x:1213.6, zj_ex:559, dcb:1500, support: 199.8 }
+        m0: { cx1:325.1, cx2:333.8, cx3:379.9, tq:899.2, lx:1035.7, zj:3908.6, pg:211.0, pg4:180.3, pg5:266.0, zl:83.0, tq_x:1026.8, zj_ex:473, support: 169 },
+        m3: { cx1:354.7, cx2:364.2, cx3:414.5, tq:981.0, lx:1129.9, zj:4264.0, pg:230.2, pg4:196.7, pg5:290.2, zl:90.6, tq_x:1120.2, zj_ex:516, support: 184.4 },
+        m5: { cx1:384.3, cx2:394.6, cx3:449.1, tq:1062.8, lx:1224.1, zj:4619.4, pg:249.4, pg4:213.1, pg5:314.4, zl:98.2, tq_x:1213.6, zj_ex:559, dcb:1500, support: 199.8 }
     };
 
     const gV = id => parseFloat(document.getElementById(id).value) || 0;
@@ -190,6 +192,32 @@
     function refreshZhuLeiLogic() {
         const inBrk = gC('env_break');
         const isStrong = gC('m_strong');
+        
+        // 自动转换地网与巡弋
+        if (isStrong) {
+            for (let i = 0; i < queue.length; i++) {
+                if (queue[i].id === 'tq' || queue[i].id === 'tq_x') {
+                    const prev = i > 0 ? queue[i-1].id : "";
+                    const triggers = ['pg4', 'pg5', 'cx1', 'cx2', 'cx3', 'zj', 'support'];
+                    if (triggers.includes(prev)) {
+                        queue[i].id = 'tq_x';
+                        queue[i].name = '强化特殊技：地网·巡弋';
+                    } else {
+                        queue[i].id = 'tq';
+                        queue[i].name = '强化特殊技：地网';
+                    }
+                }
+            }
+        } else {
+            for (let i = 0; i < queue.length; i++) {
+                if (queue[i].id === 'tq_x') {
+                    queue[i].id = 'tq';
+                    queue[i].name = '强化特殊技：地网';
+                }
+            }
+        }
+
+        // 逐雷逻辑
         if (inBrk && isStrong) {
             let newQ = [];
             for (let i = 0; i < queue.length; i++) {
@@ -289,7 +317,9 @@
             div.ondrop = () => {
                 const moved = queue.splice(dragIdx, 1)[0];
                 queue.splice(i, 0, moved);
-                activeIdx = i; update();
+                activeIdx = i;
+                refreshZhuLeiLogic();
+                update();
             };
             qBox.appendChild(div);
         });
@@ -347,7 +377,6 @@
         // 2. 倍率区
         const tier = cons >= 5 ? 'm5' : (cons >= 3 ? 'm3' : 'm0');
         let actId = item.id;
-        if (!isStrong && actId === 'tq_x') actId = 'tq';
         let bm = SCALING[tier][actId] || 0;
         let em = (isStrong && item.id === 'zj') ? SCALING[tier].zj_ex : 0;
         if (actId === 'dcb' && cons < 6) bm = 0;

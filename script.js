@@ -145,7 +145,6 @@ function importConfig() {
         setTimeout(() => {
             try {
                 update();
-                alert("导入成功！");
             } catch (err) {
                 console.error("Update fail:", err);
                 alert("导入部分成功，但渲染出错，请检查配置项");

@@ -34,10 +34,65 @@ select, input { width: 100%; background: #222; border: 1px solid #444; color: #f
 .check-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 10px; cursor: pointer; }
 .check-item input { width: auto; margin: 0; }
 
-.q-item { background: #1a1a1a; padding: 12px; margin-bottom: 8px; border-radius: 6px; cursor: grab; border: 1px solid #333; position: relative; user-select: none; }
-.q-item.active { border-color: var(--cyan); background: #1a2325; box-shadow: 0 0 10px rgba(0,229,255,0.2); }
-.q-item.is-zl { border-left: 4px solid var(--gold); margin-left: 15px; font-size: 0.85rem; background: #1d1d14; }
-.q-item .del { position: absolute; right: 10px; top: 10px; color: #666; cursor: pointer; }
+/* 中列容器优化 */
+.q-item {
+    background: #1a1a1a;
+    padding: 7px 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    cursor: grab;
+    border: 1px solid #333;
+    position: relative;
+    user-select: none;
+    display: flex; /* 同行显示 */
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    transition: border-color 0.2s;
+}
+
+/* 主技能样式 */
+.skill-main {
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* 自动技能样式：字体缩小一号 */
+.skill-auto {
+    font-size: 0.75rem; /* 缩小一号 */
+    color: var(--gold);
+    background: rgba(255, 204, 0, 0.1);
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px dashed rgba(255, 204, 0, 0.3);
+    cursor: pointer;
+}
+
+/* 选中态高亮 */
+.skill-main.sel, .skill-auto.sel {
+    background: var(--cyan);
+    color: #000;
+    font-weight: bold;
+}
+
+.q-item.active {
+    border-color: var(--cyan);
+    background: #1a2325;
+}
+
+.q-item .del {
+    margin-left: auto; /* 删除按钮靠右 */
+    color: #666;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0 5px;
+}
+
+.q-item .del:hover {
+    color: var(--red);
+}
 
 .factor-card { background: var(--card); border-radius: 8px; padding: 18px; margin-bottom: 15px; border: 1px solid var(--border); }
 .factor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }

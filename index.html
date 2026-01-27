@@ -11,7 +11,7 @@
     <h2>悠真核心参数</h2>
     <div class="input-group">
         <label class="label-text">命座等级</label>
-        <select id="y_const" onchange="update()">
+        <select id="y_const" onchange="handleConsChange()">
             <option value="0">0 命</option><option value="1">1 命</option><option value="2">2 命</option>
             <option value="3">3 命</option><option value="4">4 命</option><option value="5">5 命</option><option value="6">6 命</option>
         </select>
@@ -34,8 +34,9 @@
         <label class="label-text">悠真武器</label>
         <select id="y_wp" onchange="update()">
             <option value="none">无武器</option>
-            <option value="lh">硫磺石</option>
             <option value="cx">残心青囊</option>
+            <option value="lh">硫磺石</option>
+            <option value="jq">机巧心种</option>
             <option value="xh">星辉音擎</option>
         </select>
     </div>
@@ -49,6 +50,7 @@
             <option value="none">无</option>
             <option value="ry">如影随形</option>
             <option value="lb">雷暴重金属</option>
+            <option value="ht">河豚电音</option>
         </select>
     </div>
 
@@ -130,6 +132,7 @@
         <option value="pg">普攻·落羽</option>
         <option value="pg4">普攻·穿云第四段</option>
         <option value="pg5">普攻·穿云第五段</option>
+        <option value="jys">普攻·甲乙矢（一组）</option>
         <option value="dcb">电磁爆 (仅6命)</option>
     </select>
     <button class="btn-add" onclick="addSkill()">+ 添加到队列</button>

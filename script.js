@@ -21,39 +21,53 @@ function syncSkillStates() {
     const isStrong = gC('m_strong');
     const cons = parseInt(gS('y_const'));
 
-    for (let i = 0; i < queue.length; i++) {
-        if (queue[i].id === 'tq' || queue[i].id === 'tq_x') {
-            const prev = i > 0 ? queue[i - 1].id : "";
-            const triggers = ['pg4', 'pg5', 'cx1', 'cx2', 'cx3', 'zj', 'support'];
-            if (isStrong && triggers.includes(prev)) {
-                queue[i].id = 'tq_x';
-                queue[i].name = '强化特殊技：地网·巡弋';
-            } else {
-                queue[i].id = 'tq';
-                queue[i].name = '强化特殊技：地网';
-            }
-        }
-    }
+    // --- 第一步：过滤掉所有现有的自动技能，回到纯净的主序列 ---
+    // 这样在判断“上一个技能”时，就不会被 6 命生成的电磁爆干扰
+    let mainQueue = queue.filter(item => !item.isAuto);
 
-    if (!inBrk || !isStrong) {
-        queue = queue.filter(item => item.id !== 'zl');
-    } else {
-        let newQ = [];
-        for (let i = 0; i < queue.length; i++) {
-            newQ.push(queue[i]);
-            if (queue[i].id.startsWith('cx') && !queue[i].isAuto) {
-                const next = queue[i+1];
-                if (!next || next.id !== 'zl') {
-                    newQ.push({ id: 'zl', name: '逐雷 (附加)', isAuto: true, uid: Math.random() });
+    // --- 第二步：处理强化特殊技的形态转换 ---
+    for (let i = 0; i < mainQueue.length; i++) {
+        if (mainQueue[i].id === 'tq' || mainQueue[i].id === 'tq_x') {
+            if (isStrong) {
+                // 关键点：在纯净序列里找前一个技能
+                const prev = i > 0 ? mainQueue[i - 1].id : "";
+                const triggers = ['pg4', 'pg5', 'cx1', 'cx2', 'cx3', 'zj', 'support'];
+                
+                if (triggers.includes(prev)) {
+                    mainQueue[i].id = 'tq_x';
+                    mainQueue[i].name = '强化特殊技：地网·巡弋';
+                } else {
+                    mainQueue[i].id = 'tq';
+                    mainQueue[i].name = '强化特殊技：地网';
                 }
+            } else {
+                // 非潜能模式强制回归地网
+                mainQueue[i].id = 'tq';
+                mainQueue[i].name = '强化特殊技：地网';
             }
         }
-        queue = newQ;
     }
 
-    if (cons < 6) {
-        queue = queue.filter(item => item.id !== 'dcb');
+    // --- 第三步：基于处理完形态的主序列，重新生成带自动技能的完整队列 ---
+    let newQ = [];
+    for (let i = 0; i < mainQueue.length; i++) {
+        newQ.push(mainQueue[i]);
+
+        // A. 逐雷逻辑
+        if (inBrk && isStrong && mainQueue[i].id.startsWith('cx')) {
+            newQ.push({ id: 'zl', name: '逐雷 (附加)', isAuto: true, uid: Math.random() });
+        }
+
+        // B. 甲乙矢与电磁爆逻辑
+        if (['tq', 'tq_x', 'lx', 'pg', 'pg5'].includes(mainQueue[i].id)) {
+            newQ.push({ id: 'jys', name: '普攻·甲乙矢', isAuto: true, uid: Math.random() });
+            if (cons >= 6) {
+                newQ.push({ id: 'dcb', name: '电磁爆', isAuto: true, uid: Math.random() });
+            }
+        }
     }
+
+    queue = newQ;
 }
 
 /**
@@ -360,7 +374,7 @@ function renderDetails(res) {
     const makeCard = (title, val, formula, log = "") => {
         return `<div class="factor-card"><div class="factor-header"><span class="factor-title">${title}</span><span class="factor-val" style="color:var(--cyan); font-weight:bold;">${val}</span></div><div class="formula" style="white-space: pre-line;">${formula}</div>${log?`<div style="margin-top:8px;">${log.split(' | ').map(t=>`<span class="tag">${t}</span>`).join('')}</div>`:''}</div>`;
     };
-    area.innerHTML = `<h3 style="color:var(--cyan); margin-bottom:20px; border-left:4px solid var(--cyan); padding-left:10px;">动作演算：${res.name}</h3>${makeCard("1. 攻击力乘区 (Attack)", res.atk.val, res.atk.formula, res.atk.log)}${makeCard("2. 技能倍率 (Multiplier)", res.mul.val, res.mul.formula, res.mul.log)}${makeCard("3. 增伤乘区 (Damage Bonus)", res.dmg.val, res.dmg.formula)}<div class="factor-card"><div class="factor-header"><span class="factor-title">4. 双暴乘区 (Critical)</span><span class="factor-val" style="color:var(--cyan); font-weight:bold;">x${res.crit_zone.val_exp}</span></div><div class="formula">${res.crit_zone.cr_f}\n${res.crit_zone.cd_f}\n${res.crit_zone.exp_f}</div></div>${makeCard("5. 防御乘区 (Defense)", res.def.val, res.def.formula, res.def.log)}${makeCard("6. 抗性乘区 (Resistance)", res.res.val, res.res.formula)}${makeCard("7. 失衡易伤 (Vulnerability)", res.vun.val, res.vun.formula)}`;
+    area.innerHTML = `<h3 style="color:var(--gold); margin-bottom:20px; border-left:4px solid var(--gold); padding-left:10px;">动作演算：${res.name}</h3>${makeCard("1. 攻击力乘区 (Attack)", res.atk.val, res.atk.formula, res.atk.log)}${makeCard("2. 技能倍率 (Multiplier)", res.mul.val, res.mul.formula, res.mul.log)}${makeCard("3. 增伤乘区 (Damage Bonus)", res.dmg.val, res.dmg.formula)}<div class="factor-card"><div class="factor-header"><span class="factor-title">4. 双暴乘区 (Critical)</span><span class="factor-val" style="color:var(--cyan); font-weight:bold;">x${res.crit_zone.val_exp}</span></div><div class="formula">${res.crit_zone.cr_f}\n${res.crit_zone.cd_f}\n${res.crit_zone.exp_f}</div></div>${makeCard("5. 防御乘区 (Defense)", res.def.val, res.def.formula, res.def.log)}${makeCard("6. 抗性乘区 (Resistance)", res.res.val, res.res.formula)}${makeCard("7. 失衡易伤 (Vulnerability)", res.vun.val, res.vun.formula)}`;
 }
 
 window.setActive = (idx) => { activeIdx = idx; update(); };

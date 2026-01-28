@@ -13,18 +13,14 @@ const gV = id => parseFloat(document.getElementById(id).value) || 0;
 const gC = id => document.getElementById(id).checked;
 const gS = id => document.getElementById(id).value;
 
-/**
- * 逻辑 A: 状态同步
- */
 function syncSkillStates() {
     const inBrk = gC('env_break');
     const isStrong = gC('m_strong');
     const cons = parseInt(gS('y_const'));
 
-    // 1. 提取主序列
     let mainQueue = queue.filter(item => !item.isAuto);
 
-    // 2. 处理强化特殊技形态
+    // 1. 处理强化特殊技形态转换
     for (let i = 0; i < mainQueue.length; i++) {
         if (mainQueue[i].id === 'tq' || mainQueue[i].id === 'tq_x') {
             if (isStrong) {
@@ -44,28 +40,52 @@ function syncSkillStates() {
         }
     }
 
-    // 3. 重新生成完整序列
+    // 2. 重新合成序列
     let newQ = [];
     for (let i = 0; i < mainQueue.length; i++) {
-        newQ.push(mainQueue[i]);
-        // 逐雷
-        if (inBrk && isStrong && mainQueue[i].id.startsWith('cx')) {
-            newQ.push({ id: 'zl', name: '逐雷 (附加)', isAuto: true, uid: Math.random() });
+        const currentMain = mainQueue[i];
+        newQ.push(currentMain);
+
+        const getExistingAuto = (skillId) => {
+            const originalIdx = queue.findIndex(q => q.uid === currentMain.uid);
+            if (originalIdx === -1) return null;
+            let searchIdx = originalIdx + 1;
+            while(queue[searchIdx] && queue[searchIdx].isAuto) {
+                if(queue[searchIdx].id === skillId) return queue[searchIdx];
+                searchIdx++;
+            }
+            return null;
+        };
+
+        if (inBrk && isStrong && currentMain.id.startsWith('cx')) {
+            const existing = getExistingAuto('zl');
+            if (existing) { newQ.push(existing); } 
+            else if (!queue.some(q => q.uid === currentMain.uid)) { 
+                 newQ.push({ id: 'zl', name: '逐雷 (附加)', isAuto: true, uid: Math.random() });
+            }
         }
-        // 甲乙矢与电磁爆
-        if (['tq', 'tq_x', 'lx', 'pg', 'pg5'].includes(mainQueue[i].id)) {
-            newQ.push({ id: 'jys', name: '普攻·甲乙矢', isAuto: true, uid: Math.random() });
+
+        if (['tq', 'tq_x', 'lx', 'pg', 'pg5'].includes(currentMain.id)) {
+            const existingJys = getExistingAuto('jys');
+            if (existingJys) { 
+                newQ.push(existingJys); 
+            } else if (!queue.some(q => q.uid === currentMain.uid)) {
+                newQ.push({ id: 'jys', name: '普攻·甲乙矢', isAuto: true, uid: Math.random() });
+            }
+
             if (cons >= 6) {
-                newQ.push({ id: 'dcb', name: '电磁爆', isAuto: true, uid: Math.random() });
+                const existingDcb = getExistingAuto('dcb');
+                if (existingDcb) { 
+                    newQ.push(existingDcb); 
+                } else if (!queue.some(q => q.uid === currentMain.uid)) {
+                    newQ.push({ id: 'dcb', name: '电磁爆', isAuto: true, uid: Math.random() });
+                }
             }
         }
     }
     queue = newQ;
 }
 
-/**
- * 逻辑 B: 自动添加子技能 (用于手动添加技能时的即时反馈)
- */
 function autoAddSubSkills(mainIdx) {
     const cons = parseInt(gS('y_const'));
     const isStrong = gC('m_strong');
@@ -105,7 +125,6 @@ function addSkill() {
     const name = sel.options[sel.selectedIndex].text;
     const newItem = { id, name, isAuto: false, uid: Math.random() };
     queue.push(newItem);
-    syncSkillStates();
     autoAddSubSkills(queue.indexOf(newItem));
     activeIdx = queue.length - 1;
     update();
@@ -126,7 +145,7 @@ function exportConfig() {
             b_nk: gC('b_nk'), b_ap: gC('b_ap'), b_mg: gC('b_mg'), b_jy: gC('b_jy'), b_sdx: gC('b_sdx'),
             e_def: gV('e_def'), e_res: gV('e_res'), e_vun: gV('e_vun')
         },
-        queue: queue.map(i => ({ id: i.id, name: i.name, isAuto: i.isAuto }))
+        queue: queue.map(i => ({ id: i.id, name: i.name, isAuto: i.isAuto, uid: i.uid }))
     };
     navigator.clipboard.writeText(JSON.stringify(data)).then(() => alert("配置已导出至剪贴板"));
 }
@@ -145,7 +164,7 @@ function importConfig() {
             }
         });
         if (data.queue) {
-            queue = data.queue.map(i => ({ id: String(i.id), name: String(i.name), isAuto: !!i.isAuto, uid: Math.random() }));
+            queue = data.queue.map(i => ({ id: String(i.id), name: String(i.name), isAuto: !!i.isAuto, uid: i.uid || Math.random() }));
         }
         syncSkillStates();
         activeIdx = queue.length > 0 ? 0 : -1;
@@ -232,7 +251,6 @@ function calculateDamage(item, idx) {
     const cons = parseInt(gS('y_const')), ref = parseInt(gS('y_ref')), isStrong = gC('m_strong'), inBrk = gC('env_break'), inAbn = gC('env_abnormal');
     const res = {};
 
-    // 1. 攻击区
     let ap_val = 0, ap_list = [];
     if (gS('y_wp')==='lh') { let v=[0, 24.5, 30.8, 36.4, 42, 49][ref]; ap_val += v/100; ap_list.push(`硫磺石(${v}%)`); }
     if (gS('y_wp')==='xh') { 
@@ -255,23 +273,23 @@ function calculateDamage(item, idx) {
     const atk = gV('p_atk') * (1 + ap_val) + af_val;
     res.atk = { val: Math.floor(atk), formula: `攻击 = 面板(${gV('p_atk')}) × (1 + ${ap_list.length?ap_list.join('+'):'0%'}) + ${af_str} = ${Math.floor(atk)}`, log: `局内加成: ${(ap_val*100).toFixed(1)}% | 固定值: ${af_val.toFixed(0)}` };
 
-    // 2. 倍率区
     const tier = cons >= 5 ? 'm5' : (cons >= 3 ? 'm3' : (cons >= 1 ? 'm1' : 'm0'));
     let bm = SCALING[tier][item.id] || 0, em = (isStrong && item.id === 'zj') ? SCALING[tier].zj_ex : 0;
     res.mul = { val: (bm + em).toFixed(1) + "%", formula: `倍率 = 基础(${bm}%) + 潜能补正(${em}%) = ${(bm+em).toFixed(1)}%`, log: `技能档位: ${tier}` };
 
-    // 3. 增伤区
     let db_val = gV('p_ele_dmg')/100, db_list = [`面板(${gV('p_ele_dmg')}%)`];
-    if (inBrk || inAbn) { db_val += 0.4; db_list.push("环境失衡/异常(40%)"); }
+    if (inBrk || inAbn) { db_val += 0.4; db_list.push("额外能力·超频(40%)"); }
     if (gC('b_yjy')) { db_val += 0.2; db_list.push("耀嘉音(20%)"); }
-    if (gC('b_ly')) { let v = gS('ly_const') >= 2 ? 0.55 : 0.4; db_val += v; db_list.push(`琉音(约${v*100}%)`); }
+    if (gC('b_ly')) { let v = gS('ly_const') >= 2 ? 0.55 : 0.4; db_val += v; db_list.push(`琉音(${v*100}%)`); }
     if (gC('b_mg')) { db_val += 0.18; db_list.push("月光(18%)"); }
     if (gC('b_jy')) { db_val += 0.24; db_list.push("佳音(24%)"); }
     if (gS('y_wp')==='jq') {
         let v = [0, 12.5, 14.5, 16.5, 18.5, 20][ref], hasPg = false, hasTq = false;
-        for(let k=0; k<idx; k++) {
-            if(queue[k].id.startsWith('pg') || queue[k].id === 'jys') hasPg = true;
-            if(queue[k].id.startsWith('tq')) hasTq = true;
+        // 关键修复：循环时判断当前动作及之前的所有动作（含自动添加技能）
+        for(let k=0; k<=idx; k++) {
+            const qid = queue[k].id;
+            if(qid.startsWith('pg') || qid === 'jys') hasPg = true;
+            if(qid.startsWith('tq')) hasTq = true;
         }
         let layers = (hasPg ? 1 : 0) + (hasTq ? 1 : 0);
         if(layers > 0) { db_val += (v * layers)/100; db_list.push(`机巧心种${layers}层(${(v * layers).toFixed(1)}%)`); }
@@ -290,7 +308,6 @@ function calculateDamage(item, idx) {
     }
     res.dmg = { val: (1+db_val).toFixed(3), formula: `系数 = 1 + ${db_list.join(' + ')} = ${(1+db_val).toFixed(3)}` };
 
-    // 4. 双暴区
     let cr = gV('p_cr'), cd = gV('p_cd'), cr_list = [`面板(${cr}%)`], cd_list = [`面板(${cd}%)`];
     if (gS('s4_set')==='ry') { cr += 12; cr_list.push("如影4(12%)"); }
     if (gC('b_nk')) { cr += 15; cr_list.push("妮可(15%)"); }
@@ -307,7 +324,6 @@ function calculateDamage(item, idx) {
     let fcr = Math.min(100, cr)/100, fcd = cd/100;
     res.crit_zone = { val_exp: (1 + fcr * fcd).toFixed(3), cr_f: `暴率 = ${cr_list.join(' + ')} = ${(fcr*100).toFixed(1)}%`, cd_f: `爆伤 = ${cd_list.join(' + ')} = ${(fcd*100).toFixed(1)}%`, exp_f: `期望 = 1 + ${fcr.toFixed(3)} × ${fcd.toFixed(3)} = ${(1 + fcr * fcd).toFixed(3)}`, fcd_pure: fcd, fcr_pure: fcr };
 
-    // 5. 防御区
     let shred_val = 0, shred_list = [];
     if (gC('b_nk')) { shred_val += 0.4; shred_list.push("妮可(40%)"); }
     if (gC('b_qy') && gS('qy_const') >= 1) { shred_val += 0.15; shred_list.push("青衣1命(15%)"); }
@@ -318,10 +334,11 @@ function calculateDamage(item, idx) {
         const isPgOrZj = item.id.startsWith('pg') || item.id === 'zj' || item.id === 'jys';
         if (isPgOrZj) {
             let hasAnyPg = false, hasAnyTq = false;
-            for (let k = 0; k < idx; k++) {
-                const prevId = queue[k].id;
-                if (prevId.startsWith('pg') || prevId === 'jys') hasAnyPg = true;
-                if (prevId.startsWith('tq')) hasAnyTq = true;
+            // 关键修复：机巧心种减防判定也需要扫描全序列中的自动添加技能
+            for (let k = 0; k <= idx; k++) {
+                const qid = queue[k].id;
+                if (qid.startsWith('pg') || qid === 'jys') hasAnyPg = true;
+                if (qid.startsWith('tq')) hasAnyTq = true;
             }
             if (hasAnyPg && hasAnyTq) {
                 jq_shred = [0, 0.20, 0.23, 0.26, 0.29, 0.32][ref];
@@ -334,7 +351,6 @@ function calculateDamage(item, idx) {
     let s1 = ed * (1 - total_shred), s2 = s1 * (1 - pr), s3 = Math.max(0, s2 - pv), fdef = 794 / (s3 + 794);
     res.def = { val: fdef.toFixed(4), formula: `1. 减防后防御 = ${ed} × (1 - ${total_shred.toFixed(3)}) [来源:${shred_list.length?shred_list.join('+'):'无'}] = ${s1.toFixed(1)}\n2. 穿透率后 = ${s1.toFixed(1)} × (1 - ${pr.toFixed(3)}) = ${s2.toFixed(1)}\n3. 穿透值后 = ${s2.toFixed(1)} - ${pv} = ${s3.toFixed(1)}\n4. 防御系数 = 794 / (${s3.toFixed(1)} + 794) = ${fdef.toFixed(4)}`, log: `总减防: ${(total_shred*100).toFixed(1)}% | 穿透率: ${pr*100}%` };
 
-    // 6. 抗性区
     let res_b = gV('e_res')/100, rs_val = 0, rs_list = [];
     if(gC('b_yjy') && gS('yjy_const')>=1) { rs_val += 0.18; rs_list.push("耀嘉音1命(18%)"); }
     if(gC('b_ly') && gS('ly_const')>=1) { rs_val += 0.15; rs_list.push("琉音1命(15%)"); }
@@ -343,7 +359,6 @@ function calculateDamage(item, idx) {
     let fres = 1 - (res_b - rs_val);
     res.res = { val: fres.toFixed(3), formula: `系数 = 1 - (初始${res_b} - 减抗(${rs_list.length?rs_list.join('+'):'0%'})) = ${fres.toFixed(3)}` };
 
-    // 7. 失衡易伤
     let vun_b = inBrk ? gV('e_vun')/100 : 1.0, vs_val = 0, vs_list = [];
     if (gC('b_bj')) { vs_val += 0.35; vs_list.push("扳机(35%)"); if(gS('bj_const') >= 1) { vs_val += 0.2; vs_list.push("扳机1命(20%)"); } }
     if (gC('b_ly') && inBrk) { vs_val += 0.3; vs_list.push("琉音(30%)"); if(gS('ly_const') >= 2) { vs_val += 0.2; vs_list.push("琉音2命(20%)"); } }
@@ -372,17 +387,12 @@ window.removeSkill = (idx) => {
     if (idx < 0 || idx >= queue.length) return;
     const item = queue[idx];
     if (item.isAuto) {
-        // 如果是手动删除附属技能
         queue.splice(idx, 1);
     } else {
-        // 如果删除的是主技能，连带删除其后所有附属技能
         let count = 1;
-        while (idx + count < queue.length && queue[idx + count].isAuto) {
-            count++;
-        }
+        while (idx + count < queue.length && queue[idx + count].isAuto) { count++; }
         queue.splice(idx, count);
     }
     activeIdx = -1;
-    syncSkillStates(); // 重新检查序列逻辑（如巡弋替换状态）
     update();
 };

@@ -21,18 +21,15 @@ function syncSkillStates() {
     const isStrong = gC('m_strong');
     const cons = parseInt(gS('y_const'));
 
-    // --- 第一步：过滤掉所有现有的自动技能，回到纯净的主序列 ---
-    // 这样在判断“上一个技能”时，就不会被 6 命生成的电磁爆干扰
+    // 1. 提取主序列
     let mainQueue = queue.filter(item => !item.isAuto);
 
-    // --- 第二步：处理强化特殊技的形态转换 ---
+    // 2. 处理强化特殊技形态
     for (let i = 0; i < mainQueue.length; i++) {
         if (mainQueue[i].id === 'tq' || mainQueue[i].id === 'tq_x') {
             if (isStrong) {
-                // 关键点：在纯净序列里找前一个技能
                 const prev = i > 0 ? mainQueue[i - 1].id : "";
                 const triggers = ['pg4', 'pg5', 'cx1', 'cx2', 'cx3', 'zj', 'support'];
-                
                 if (triggers.includes(prev)) {
                     mainQueue[i].id = 'tq_x';
                     mainQueue[i].name = '强化特殊技：地网·巡弋';
@@ -41,24 +38,21 @@ function syncSkillStates() {
                     mainQueue[i].name = '强化特殊技：地网';
                 }
             } else {
-                // 非潜能模式强制回归地网
                 mainQueue[i].id = 'tq';
                 mainQueue[i].name = '强化特殊技：地网';
             }
         }
     }
 
-    // --- 第三步：基于处理完形态的主序列，重新生成带自动技能的完整队列 ---
+    // 3. 重新生成完整序列
     let newQ = [];
     for (let i = 0; i < mainQueue.length; i++) {
         newQ.push(mainQueue[i]);
-
-        // A. 逐雷逻辑
+        // 逐雷
         if (inBrk && isStrong && mainQueue[i].id.startsWith('cx')) {
             newQ.push({ id: 'zl', name: '逐雷 (附加)', isAuto: true, uid: Math.random() });
         }
-
-        // B. 甲乙矢与电磁爆逻辑
+        // 甲乙矢与电磁爆
         if (['tq', 'tq_x', 'lx', 'pg', 'pg5'].includes(mainQueue[i].id)) {
             newQ.push({ id: 'jys', name: '普攻·甲乙矢', isAuto: true, uid: Math.random() });
             if (cons >= 6) {
@@ -66,12 +60,11 @@ function syncSkillStates() {
             }
         }
     }
-
     queue = newQ;
 }
 
 /**
- * 逻辑 B: 自动添加子技能
+ * 逻辑 B: 自动添加子技能 (用于手动添加技能时的即时反馈)
  */
 function autoAddSubSkills(mainIdx) {
     const cons = parseInt(gS('y_const'));
@@ -83,14 +76,12 @@ function autoAddSubSkills(mainIdx) {
     if (inBrk && isStrong && mainSkill.id.startsWith('cx')) {
         subs.push({ id: 'zl', name: '逐雷 (附加)', isAuto: true, uid: Math.random() });
     }
-
     if (['tq', 'tq_x', 'lx', 'pg', 'pg5'].includes(mainSkill.id)) {
         subs.push({ id: 'jys', name: '普攻·甲乙矢', isAuto: true, uid: Math.random() });
         if (cons >= 6) {
             subs.push({ id: 'dcb', name: '电磁爆', isAuto: true, uid: Math.random() });
         }
     }
-
     if (subs.length > 0) {
         queue.splice(mainIdx + 1, 0, ...subs);
     }
@@ -316,7 +307,7 @@ function calculateDamage(item, idx) {
     let fcr = Math.min(100, cr)/100, fcd = cd/100;
     res.crit_zone = { val_exp: (1 + fcr * fcd).toFixed(3), cr_f: `暴率 = ${cr_list.join(' + ')} = ${(fcr*100).toFixed(1)}%`, cd_f: `爆伤 = ${cd_list.join(' + ')} = ${(fcd*100).toFixed(1)}%`, exp_f: `期望 = 1 + ${fcr.toFixed(3)} × ${fcd.toFixed(3)} = ${(1 + fcr * fcd).toFixed(3)}`, fcd_pure: fcd, fcr_pure: fcr };
 
-    // 5. 防御区 (严格执行：出现过普攻 AND 强化特殊技)
+    // 5. 防御区
     let shred_val = 0, shred_list = [];
     if (gC('b_nk')) { shred_val += 0.4; shred_list.push("妮可(40%)"); }
     if (gC('b_qy') && gS('qy_const') >= 1) { shred_val += 0.15; shred_list.push("青衣1命(15%)"); }
@@ -326,14 +317,12 @@ function calculateDamage(item, idx) {
     if (gS('y_wp') === 'jq') {
         const isPgOrZj = item.id.startsWith('pg') || item.id === 'zj' || item.id === 'jys';
         if (isPgOrZj) {
-            let hasAnyPg = false;
-            let hasAnyTq = false;
+            let hasAnyPg = false, hasAnyTq = false;
             for (let k = 0; k < idx; k++) {
                 const prevId = queue[k].id;
                 if (prevId.startsWith('pg') || prevId === 'jys') hasAnyPg = true;
                 if (prevId.startsWith('tq')) hasAnyTq = true;
             }
-            // 必须两者都满足
             if (hasAnyPg && hasAnyTq) {
                 jq_shred = [0, 0.20, 0.23, 0.26, 0.29, 0.32][ref];
                 shred_list.push(`机巧心种(普攻+特技已达成,无视防御${(jq_shred * 100).toFixed(0)}%)`);
@@ -378,4 +367,22 @@ function renderDetails(res) {
 }
 
 window.setActive = (idx) => { activeIdx = idx; update(); };
-window.removeSkill = (idx) => { queue.splice(idx, 1); activeIdx = -1; update(); };
+
+window.removeSkill = (idx) => {
+    if (idx < 0 || idx >= queue.length) return;
+    const item = queue[idx];
+    if (item.isAuto) {
+        // 如果是手动删除附属技能
+        queue.splice(idx, 1);
+    } else {
+        // 如果删除的是主技能，连带删除其后所有附属技能
+        let count = 1;
+        while (idx + count < queue.length && queue[idx + count].isAuto) {
+            count++;
+        }
+        queue.splice(idx, count);
+    }
+    activeIdx = -1;
+    syncSkillStates(); // 重新检查序列逻辑（如巡弋替换状态）
+    update();
+};

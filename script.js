@@ -3,11 +3,11 @@ let activeIdx = -1;
 let dragIdx = null;
 
 const SCALING = {
-    m0: { cx1: 325.1, cx2: 333.8, cx3: 379.9, tq: 899.2, lx: 1035.7, zj: 3908.6, pg: 211.0, pg4: 180.3, pg5: 266.0, zl: 83.0, tq_x: 1026.8, zj_ex: 473, support: 169, jys: 32.4 * 6 },
-    m1: { cx1: 325.1, cx2: 333.8, cx3: 379.9, tq: 899.2, lx: 1035.7, zj: 3908.6, pg: 211.0, pg4: 180.3, pg5: 266.0, zl: 83.0, tq_x: 1026.8, zj_ex: 473, support: 169, jys: 32.4 * 12 },
-    m3: { cx1: 354.7, cx2: 364.2, cx3: 414.5, tq: 981.0, lx: 1129.9, zj: 4264.0, pg: 230.2, pg4: 196.7, pg5: 290.2, zl: 90.6, tq_x: 1120.2, zj_ex: 516, support: 184.4, jys: 35.4 * 12 },
-    m5: { cx1: 384.3, cx2: 394.6, cx3: 449.1, tq: 1062.8, lx: 1224.1, zj: 4619.4, pg: 249.4, pg4: 213.1, pg5: 314.4, zl: 98.2, tq_x: 1213.6, zj_ex: 559, support: 199.8, jys: 38.4 * 12 },
-    m6: { cx1: 384.3, cx2: 394.6, cx3: 449.1, tq: 1062.8, lx: 1224.1, zj: 4619.4, pg: 249.4, pg4: 213.1, pg5: 314.4, zl: 98.2, tq_x: 1213.6, zj_ex: 559, dcb: 1500, support: 199.8, jys: 38.4 * 12 }
+    m0: { cx1: 325.1, cx2: 333.8, cx3: 379.9, tq: 899.2, lx: 1035.7, zj: 3908.6, pg: 211.0, pg4: 180.3, pg5: 266.0, zl: 83.0, tq_x: 1026.8, zj_ex: 473, support: 169, jys: 32.4 * 6, qx_mdnz: 300.0 },
+    m1: { cx1: 325.1, cx2: 333.8, cx3: 379.9, tq: 899.2, lx: 1035.7, zj: 3908.6, pg: 211.0, pg4: 180.3, pg5: 266.0, zl: 83.0, tq_x: 1026.8, zj_ex: 473, support: 169, jys: 32.4 * 12, qx_mdnz: 300.0 },
+    m3: { cx1: 354.7, cx2: 364.2, cx3: 414.5, tq: 981.0, lx: 1129.9, zj: 4264.0, pg: 230.2, pg4: 196.7, pg5: 290.2, zl: 90.6, tq_x: 1120.2, zj_ex: 516, support: 184.4, jys: 35.4 * 12, qx_mdnz: 300.0 },
+    m5: { cx1: 384.3, cx2: 394.6, cx3: 449.1, tq: 1062.8, lx: 1224.1, zj: 4619.4, pg: 249.4, pg4: 213.1, pg5: 314.4, zl: 98.2, tq_x: 1213.6, zj_ex: 559, support: 199.8, jys: 38.4 * 12, qx_mdnz: 300.0 },
+    m6: { cx1: 384.3, cx2: 394.6, cx3: 449.1, tq: 1062.8, lx: 1224.1, zj: 4619.4, pg: 249.4, pg4: 213.1, pg5: 314.4, zl: 98.2, tq_x: 1213.6, zj_ex: 559, dcb: 1500, support: 199.8, jys: 38.4 * 12, qx_mdnz: 300.0 }
 };
 
 const gV = id => parseFloat(document.getElementById(id).value) || 0;
@@ -18,18 +18,31 @@ function syncSkillStates() {
     const inBrk = gC('env_break');
     const isStrong = gC('m_strong');
     const cons = parseInt(gS('y_const'));
+    const hasQx = gC('b_qx');
+    const qxCount = parseInt(gV('qx_count')) || 0;
 
     let newQ = [];
-    for (let i = 0; i < queue.length; i++) {
-        if (queue[i].isAuto) continue;
+    
+    let baseQ = queue.filter(item => !(item.id === 'qx_mdnz' && item.isAutoAdd));
 
-        let mainSkill = queue[i];
+    for (let i = 0; i < baseQ.length; i++) {
+        if (baseQ[i].isAuto) continue;
+
+        let mainSkill = { ...baseQ[i] };
         
-        // 1. 强化特殊技形态转换
         if (mainSkill.id === 'tq' || mainSkill.id === 'tq_x') {
-            const prev = newQ.length > 0 ? newQ[newQ.length - 1].id : "";
+            let prevId = "";
+            if (newQ.length > 0) {
+                for (let j = newQ.length - 1; j >= 0; j--) {
+                    if (!newQ[j].isAuto) {
+                        prevId = newQ[j].id;
+                        break;
+                    }
+                }
+            }
+            
             const triggers = ['pg4', 'pg5', 'cx1', 'cx2', 'cx3', 'zj', 'support'];
-            if (isStrong && triggers.includes(prev)) {
+            if (isStrong && triggers.includes(prevId)) {
                 mainSkill.id = 'tq_x';
                 mainSkill.name = '强化特殊技：地网·巡弋';
             } else {
@@ -40,58 +53,25 @@ function syncSkillStates() {
 
         newQ.push(mainSkill);
 
-        let existingAutoIds = [];
-        let k = i + 1;
-        while (queue[k] && queue[k].isAuto) {
-            existingAutoIds.push(queue[k].id);
-            k++;
-        }
-
-        // 2. 逐雷逻辑
         if (inBrk && isStrong && mainSkill.id.startsWith('cx')) {
-            if (existingAutoIds.includes('zl') || !existingAutoIds.length) {
-                newQ.push({ id: 'zl', name: '逐雷 (附加)', isAuto: true, uid: Math.random() });
-            }
+            newQ.push({ id: 'zl', name: '逐雷 (附加)', isAuto: true, uid: Math.random() });
         }
 
-        // 3. 甲乙矢与电磁爆逻辑
         if (['tq', 'tq_x', 'lx', 'pg', 'pg5'].includes(mainSkill.id)) {
-            // 甲乙矢强制保持/添加
-            if (existingAutoIds.includes('jys') || !existingAutoIds.length) {
-                newQ.push({ id: 'jys', name: '普攻·甲乙矢', isAuto: true, uid: Math.random() });
-            }
-            // 电磁爆：关键修复点
-            // 只有当命座满足6，且原本没有手动删除过（或者是因为刚从低命切换上来导致existing为空）时添加
+            newQ.push({ id: 'jys', name: '普攻·甲乙矢', isAuto: true, uid: Math.random() });
             if (cons >= 6) {
-                if (existingAutoIds.includes('dcb') || !existingAutoIds.some(id => id === 'dcb')) {
-                    // 如果列表里本来就没有电磁爆，且该主技能后面没有紧跟电磁爆，则添加
-                    newQ.push({ id: 'dcb', name: '电磁爆', isAuto: true, uid: Math.random() });
-                }
+                newQ.push({ id: 'dcb', name: '电磁爆', isAuto: true, uid: Math.random() });
             }
         }
     }
-    queue = newQ;
-}
 
-function autoAddSubSkills(mainIdx) {
-    const cons = parseInt(gS('y_const'));
-    const isStrong = gC('m_strong');
-    const inBrk = gC('env_break');
-    const mainSkill = queue[mainIdx];
-    let subs = [];
-
-    if (inBrk && isStrong && mainSkill.id.startsWith('cx')) {
-        subs.push({ id: 'zl', name: '逐雷 (附加)', isAuto: true, uid: Math.random() });
-    }
-    if (['tq', 'tq_x', 'lx', 'pg', 'pg5'].includes(mainSkill.id)) {
-        subs.push({ id: 'jys', name: '普攻·甲乙矢', isAuto: true, uid: Math.random() });
-        if (cons >= 6) {
-            subs.push({ id: 'dcb', name: '电磁爆', isAuto: true, uid: Math.random() });
+    if (hasQx && qxCount > 0) {
+        for (let k = 0; k < qxCount; k++) {
+            newQ.push({ id: 'qx_mdnz', name: '(千夏)猫的凝视', isAuto: false, isAutoAdd: true, uid: Math.random() });
         }
     }
-    if (subs.length > 0) {
-        queue.splice(mainIdx + 1, 0, ...subs);
-    }
+
+    queue = newQ;
 }
 
 function handleToggleCondition() { syncSkillStates(); update(); }
@@ -103,7 +83,9 @@ function handleTeammateToggle(type) {
         if (type === 'ly') { document.getElementById('ly_const').value = "0"; document.getElementById('ly_wp_select').value = "none"; }
         if (type === 'bj') { document.getElementById('bj_const').value = "0"; document.getElementById('bj_wp_select').value = "none"; }
         if (type === 'qy') { document.getElementById('qy_const').value = "0"; }
+        if (type === 'qx') { document.getElementById('qx_const').value = "0"; document.getElementById('qx_count').value = "3"; document.getElementById('qx_wp_select').value = "none"; }
     }
+    syncSkillStates();
     update();
 }
 
@@ -113,7 +95,7 @@ function addSkill() {
     const name = sel.options[sel.selectedIndex].text;
     const newItem = { id, name, isAuto: false, uid: Math.random() };
     queue.push(newItem);
-    autoAddSubSkills(queue.indexOf(newItem));
+    syncSkillStates(); 
     activeIdx = queue.length - 1;
     update();
 }
@@ -130,10 +112,10 @@ function exportConfig() {
             b_ly: gC('b_ly'), ly_const: gS('ly_const'), ly_ref: gS('ly_ref'), ly_wp_select: gS('ly_wp_select'),
             b_bj: gC('b_bj'), bj_const: gS('bj_const'), bj_ref: gS('bj_ref'), bj_wp_select: gS('bj_wp_select'),
             b_qy: gC('b_qy'), qy_const: gS('qy_const'),
-            b_nk: gC('b_nk'), b_ap: gC('b_ap'), b_mg: gC('b_mg'), b_jy: gC('b_jy'), b_sdx: gC('b_sdx'),
-            e_def: gV('e_def'), e_res: gV('e_res'), e_vun: gV('e_vun')
+            b_qx: gC('b_qx'), qx_atk: gV('qx_atk'), qx_const: gS('qx_const'), qx_count: gV('qx_count'), qx_wp_select: gS('qx_wp_select'), qx_ref: gS('qx_ref'),
+            b_nk: gC('b_nk'), b_ap: gC('b_ap'), b_mg: gC('b_mg'), b_jy: gC('b_jy'), b_sdx: gC('b_sdx')
         },
-        queue: queue.map(i => ({ id: i.id, name: i.name, isAuto: i.isAuto, uid: i.uid }))
+        queue: queue.map(i => ({ id: i.id, name: i.name, isAuto: i.isAuto, isAutoAdd: i.isAutoAdd, uid: i.uid }))
     };
     navigator.clipboard.writeText(JSON.stringify(data)).then(() => alert("配置已导出至剪贴板"));
 }
@@ -152,7 +134,7 @@ function importConfig() {
             }
         });
         if (data.queue) {
-            queue = data.queue.map(i => ({ id: String(i.id), name: String(i.name), isAuto: !!i.isAuto, uid: i.uid || Math.random() }));
+            queue = data.queue.map(i => ({ id: String(i.id), name: String(i.name), isAuto: !!i.isAuto, isAutoAdd: !!i.isAutoAdd, uid: i.uid || Math.random() }));
         }
         syncSkillStates();
         activeIdx = queue.length > 0 ? 0 : -1;
@@ -169,22 +151,25 @@ function update() {
     safeSetDisplay('sub_ly', gC('b_ly'));
     safeSetDisplay('sub_bj', gC('b_bj'));
     safeSetDisplay('sub_qy', gC('b_qy'));
+    safeSetDisplay('sub_qx', gC('b_qx'));
 
     const qBox = document.getElementById('q_list');
     qBox.innerHTML = '';
     let tCrit = 0, tExp = 0;
-    const categories = { cx: { name: "冲刺攻击和逐雷", total: 0, color: "bg-cx" }, tq: { name: "强化特殊技", total: 0, color: "bg-tq" }, pg: { name: "普攻和快速支援", total: 0, color: "bg-pg" }, zj: { name: "终结技", total: 0, color: "bg-zj" }, lx: { name: "连携技", total: 0, color: "bg-lx" }, dcb: { name: "电磁爆", total: 0, color: "bg-dcb" } };
+    const categories = { cx: { name: "冲刺攻击和逐雷", total: 0, color: "bg-cx" }, tq: { name: "强化特殊技", total: 0, color: "bg-tq" }, pg: { name: "普攻和快速支援", total: 0, color: "bg-pg" }, zj: { name: "终结技", total: 0, color: "bg-zj" }, lx: { name: "连携技", total: 0, color: "bg-lx" }, dcb: { name: "电磁爆", total: 0, color: "bg-dcb" }, other: { name: "其他", total: 0, color: "bg-other" } };
 
     for (let i = 0; i < queue.length; i++) {
         const item = queue[i];
         const calc = calculateDamage(item, i);
         tCrit += calc.crit; tExp += calc.exp;
+        
         let cat = "pg";
         if (item.id.startsWith('cx') || item.id === 'zl') cat = "cx";
         else if (item.id.startsWith('tq')) cat = "tq";
         else if (item.id === 'zj') cat = "zj";
         else if (item.id === 'lx') cat = "lx";
         else if (item.id === 'dcb') cat = "dcb";
+        else if (item.id === 'qx_mdnz') cat = "other";
         categories[cat].total += calc.exp;
 
         if (item.isAuto) continue;
@@ -192,12 +177,14 @@ function update() {
         container.className = `q-item ${i === activeIdx ? 'active' : ''}`;
         container.draggable = true;
         let innerHTML = `<span class="skill-main ${i === activeIdx ? 'sel' : ''}" onclick="window.setActive(${i})">${item.name}</span>`;
+        
         let nextIdx = i + 1;
         while (nextIdx < queue.length && queue[nextIdx].isAuto) {
-            const currentAutoIdx = nextIdx;
-            innerHTML += `<span class="skill-auto ${currentAutoIdx === activeIdx ? 'sel' : ''}" onclick="event.stopPropagation(); window.setActive(${currentAutoIdx})">${queue[nextIdx].name} <i class="del-auto" onclick="window.removeSkill(${currentAutoIdx});event.stopPropagation();">×</i></span>`;
+            const currentSubIdx = nextIdx;
+            innerHTML += `<span class="skill-auto ${currentSubIdx === activeIdx ? 'sel' : ''}" onclick="event.stopPropagation(); window.setActive(${currentSubIdx})">${queue[nextIdx].name} <i class="del-auto" onclick="window.removeSkill(${currentSubIdx});event.stopPropagation();">×</i></span>`;
             nextIdx++;
         }
+        
         innerHTML += `<span class="del" onclick="window.removeSkill(${i});event.stopPropagation();">×</span>`;
         container.innerHTML = innerHTML;
         container.ondragstart = (e) => { 
@@ -210,7 +197,9 @@ function update() {
             const movedItems = queue.splice(dragIdx.start, dragIdx.length);
             let targetI = i > dragIdx.start ? i - (dragIdx.length - 1) : i;
             queue.splice(targetI, 0, ...movedItems);
-            activeIdx = targetI; syncSkillStates(); update(); dragIdx = null;
+            activeIdx = targetI; 
+            update(); 
+            dragIdx = null;
         };
         qBox.appendChild(container);
     }
@@ -253,17 +242,40 @@ function calculateDamage(item, idx) {
         if(hasZj) { ap_val += 0.15; ap_list.push("河豚4(15%)"); }
     }
     if (isStrong) { ap_val+=0.12; ap_list.push("潜能模式(12%)"); }
-    let af_val = 0, af_str = "0";
+    if (gC('b_qx')) {
+        if (parseInt(gS('qx_const')) >= 2) { ap_val += 0.1; ap_list.push("千夏2命(10%)"); }
+        if (gS('qx_wp_select') === 'slcg') {
+            let qr = parseInt(gS('qx_ref')), v = [0, 10, 11.5, 13, 14.5, 16][qr];
+            ap_val += v/100; ap_list.push(`思络成歌(${v}%)`);
+        }
+    }
+
+    let af_val = 0, af_str_list = [];
     if (gC('b_yjy')) {
         let limit = parseInt(gS('yjy_const')) >= 2 ? 1600 : 1200, ratio = parseInt(gS('yjy_const')) >= 2 ? 0.54 : 0.35;
-        af_val = Math.min(limit, gV('yjy_atk') * ratio); af_str = `耀嘉音(${af_val.toFixed(1)})`;
+        let v = Math.min(limit, gV('yjy_atk') * ratio); af_val += v; af_str_list.push(`耀嘉音(${v.toFixed(1)})`);
+    }
+    if (gC('b_qx')) {
+        let v = Math.min(1100, gV('qx_atk') * 0.3 + 50); af_val += v; af_str_list.push(`千夏(${v.toFixed(1)})`); 
     }
     const atk = gV('p_atk') * (1 + ap_val) + af_val;
-    res.atk = { val: Math.floor(atk), formula: `攻击 = 面板(${gV('p_atk')}) × (1 + ${ap_list.length?ap_list.join('+'):'0%'}) + ${af_str} = ${Math.floor(atk)}`, log: `局内加成: ${(ap_val*100).toFixed(1)}% | 固定值: ${af_val.toFixed(0)}` };
+    res.atk = { val: Math.floor(atk), formula: `攻击 = 面板(${gV('p_atk')}) × (1 + ${ap_list.length?ap_list.join('+'):'0%'}) + ${af_str_list.length?af_str_list.join('+'):'0'} = ${Math.floor(atk)}`, log: `局内加成: ${(ap_val*100).toFixed(1)}% | 固定值: ${af_val.toFixed(0)}` };
 
     const tier = cons >= 6 ? 'm6' : (cons >= 5 ? 'm5' : (cons >= 3 ? 'm3' : (cons >= 1 ? 'm1' : 'm0')));
-    let bm = SCALING[tier][item.id] || 0, em = (isStrong && item.id === 'zj') ? (cons >= 5 ? 559 : (cons >= 3 ? 516 : 473)) : 0;
-    res.mul = { val: (bm + em).toFixed(1) + "%", formula: `倍率 = 基础(${bm}%) + 潜能补正(${em}%) = ${(bm+em).toFixed(1)}%`, log: `技能档位: ${tier}` };
+    let bm = SCALING[tier][item.id] || 0;
+    let em = (isStrong && item.id === 'zj') ? (cons >= 5 ? 559 : (cons >= 3 ? 516 : 473)) : 0;
+    
+    let m_add = 0, m_log = "";
+    if (item.id === 'qx_mdnz' && gC('b_qx') && parseInt(gS('qx_const')) >= 2) {
+        m_add = 200;
+        m_log = " + 千夏2命(200%)";
+    }
+
+    res.mul = { 
+        val: (bm + em + m_add).toFixed(1) + "%", 
+        formula: `倍率 = 基础(${bm}%)${em ? ` + 潜能补正(${em}%)` : ""}${m_log} = ${(bm + em + m_add).toFixed(1)}%`, 
+        log: `技能档位: ${tier}` 
+    };
 
     let db_val = gV('p_ele_dmg')/100, db_list = [`面板(${gV('p_ele_dmg')}%)`];
     if (inBrk || inAbn) { db_val += 0.4; db_list.push("额外能力·超频(40%)"); }
@@ -271,6 +283,10 @@ function calculateDamage(item, idx) {
     if (gC('b_ly')) { let v = parseInt(gS('ly_const')) >= 2 ? 0.55 : 0.4; db_val += v; db_list.push(`琉音(${v*100}%)`); }
     if (gC('b_mg')) { db_val += 0.18; db_list.push("月光(18%)"); }
     if (gC('b_jy')) { db_val += 0.24; db_list.push("佳音(24%)"); }
+    if (gC('b_qx') && gS('qx_wp_select') === 'slcg') {
+        let qr = parseInt(gS('qx_ref')), v = [0, 25, 28.6, 32.2, 35.8, 40][qr];
+        db_val += v/100; db_list.push(`思络成歌(${v}%)`);
+    }
     if (gS('y_wp')==='jq') {
         let v = [0, 12.5, 14.5, 16.5, 18.5, 20][ref], hasPg = false, hasTq = false;
         for(let k=0; k<=idx; k++) {
@@ -314,6 +330,7 @@ function calculateDamage(item, idx) {
     let shred_val = 0, shred_list = [];
     if (gC('b_nk')) { shred_val += 0.4; shred_list.push("妮可(40%)"); }
     if (gC('b_qy') && parseInt(gS('qy_const')) >= 1) { shred_val += 0.15; shred_list.push("青衣1命(15%)"); }
+    if (gC('b_qx') && parseInt(gS('qx_const')) >= 1) { shred_val += 0.21; shred_list.push("千夏1命(21%)"); }
     if (gC('b_bj') && gS('bj_wp_select') === 'sh') { let v = [0,25,28.75,32.5,36.25,40][gV('bj_ref')]/100; shred_val += v; shred_list.push(`索魂影眸(${(v*100).toFixed(2)}%)`); }
     
     let jq_shred = 0;
@@ -349,10 +366,11 @@ function calculateDamage(item, idx) {
     if (gC('b_bj')) { vs_val += 0.35; vs_list.push("扳机(35%)"); if(parseInt(gS('bj_const')) >= 1) { vs_val += 0.2; vs_list.push("扳机1命(20%)"); } }
     if (gC('b_ly') && inBrk) { vs_val += 0.3; vs_list.push("琉音(30%)"); if(parseInt(gS('ly_const')) >= 2) { vs_val += 0.2; vs_list.push("琉音2命(20%)"); } }
     if (gC('b_qy') && inBrk) { vs_val += 0.8; vs_list.push("青衣(80%)"); if(parseInt(gS('qy_const')) >= 2) { vs_val += 0.28; vs_list.push("青衣2命(28%)"); } }
+    if (gC('b_qx') && inBrk) { vs_val += 0.3; vs_list.push("千夏(30%)"); }
     let fvun = vun_b + vs_val;
     res.vun = { val: fvun.toFixed(2), formula: `系数 = 初始${vun_b} + 额外(${vs_list.length?vs_list.join('+'):'0'}) = ${fvun.toFixed(2)}` };
 
-    const base = atk * (bm + em)/100 * (1 + db_val) * fdef * fres * fvun;
+    const base = atk * (bm + em + m_add)/100 * (1 + db_val) * fdef * fres * fvun;
     res.crit = base * (1 + res.crit_zone.fcd_pure); 
     res.exp = base * (1 + res.crit_zone.fcr_pure * res.crit_zone.fcd_pure); 
     res.name = item.name;
@@ -368,13 +386,11 @@ function renderDetails(res) {
 }
 
 window.setActive = (idx) => { activeIdx = idx; update(); };
-
 window.removeSkill = (idx) => {
     if (idx < 0 || idx >= queue.length) return;
     const item = queue[idx];
-    if (item.isAuto) {
-        queue.splice(idx, 1);
-    } else {
+    if (item.isAuto) { queue.splice(idx, 1); } 
+    else {
         let count = 1;
         while (idx + count < queue.length && queue[idx + count].isAuto) { count++; }
         queue.splice(idx, count);

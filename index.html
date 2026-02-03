@@ -65,13 +65,29 @@
         <select id="yjy_const" onchange="update()"><option value="0">0命</option><option value="1">1命</option><option value="2">2命+</option></select>
     </div>
 
+    <div class="check-item"><input type="checkbox" id="b_qx" onchange="handleTeammateToggle('qx')"> 队友：千夏</div>
+    <div id="sub_qx" style="display:none; padding-left:15px; border-left: 2px solid #444; margin-bottom:10px;">
+        <label class="label-text">千夏面板攻击</label><input type="number" id="qx_atk" value="3000" oninput="update()">
+        <label class="label-text">命座</label>
+        <select id="qx_const" onchange="update()"><option value="0">0命</option><option value="1">1命</option><option value="2">2命+</option></select>
+        <label class="label-text">猫的凝视</label>
+        <select id="qx_count" onchange="handleTeammateToggle('qx')"><option value="3">3次</option><option value="4">4次</option><option value="5">5次</option><option value="6">6次</option><option value="7">7次</option><option value="8">8次</option><option value="9">9次</option><option value="10">10次</option></select>
+        <label class="label-text">武器：思络成歌</label>
+        <select id="qx_wp_select" onchange="update()">
+            <option value="none">其他武器</option>
+            <option value="slcg">思络成歌</option>
+        </select>
+        <label class="label-text">武器精炼等级</label>
+        <select id="qx_ref" onchange="update()"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+    </div>
+
     <div class="check-item"><input type="checkbox" id="b_ly" onchange="handleTeammateToggle('ly')"> 队友：琉音</div>
     <div id="sub_ly" style="display:none; padding-left:15px; border-left: 2px solid #444; margin-bottom:10px;">
         <label class="label-text">命座</label>
         <select id="ly_const" onchange="update()"><option value="0">0命</option><option value="1">1命</option><option value="2">2命+</option></select>
         <label class="label-text">武器：昨夜来电</label>
         <select id="ly_wp_select" onchange="update()">
-            <option value="none">无武器</option>
+            <option value="none">其他武器</option>
             <option value="zn">昨夜来电</option>
         </select>
         <label class="label-text">武器精炼等级</label>
@@ -84,7 +100,7 @@
         <select id="bj_const" onchange="update()"><option value="0">0命</option><option value="1">1命+</option><option value="2">2命+</option></select>
         <label class="label-text">武器：索魂影眸</label>
         <select id="bj_wp_select" onchange="update()">
-            <option value="none">无武器</option>
+            <option value="none">其他武器</option>
             <option value="sh">索魂影眸</option>
         </select>
         <label class="label-text">武器精炼等级</label>

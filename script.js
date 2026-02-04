@@ -22,12 +22,10 @@ function syncSkillStates() {
     const qxCount = parseInt(gV('qx_count')) || 0;
 
     let newQ = [];
-    
     let baseQ = queue.filter(item => !(item.id === 'qx_mdnz' && item.isAutoAdd));
 
     for (let i = 0; i < baseQ.length; i++) {
         if (baseQ[i].isAuto) continue;
-
         let mainSkill = { ...baseQ[i] };
         
         if (mainSkill.id === 'tq' || mainSkill.id === 'tq_x') {
@@ -40,7 +38,6 @@ function syncSkillStates() {
                     }
                 }
             }
-            
             const triggers = ['pg4', 'pg5', 'cx1', 'cx2', 'cx3', 'zj', 'support'];
             if (isStrong && triggers.includes(prevId)) {
                 mainSkill.id = 'tq_x';
@@ -70,7 +67,6 @@ function syncSkillStates() {
             newQ.push({ id: 'qx_mdnz', name: '(千夏)猫的凝视', isAuto: false, isAutoAdd: true, uid: Math.random() });
         }
     }
-
     queue = newQ;
 }
 
@@ -195,8 +191,9 @@ function update() {
         container.ondrop = (e) => {
             e.preventDefault(); if (dragIdx === null) return;
             const movedItems = queue.splice(dragIdx.start, dragIdx.length);
-            let targetI = i > dragIdx.start ? i - (dragIdx.length - 1) : i;
+            let targetI = i > dragIdx.start ? i + (nextIdx - i - dragIdx.length) : i;
             queue.splice(targetI, 0, ...movedItems);
+            syncSkillStates(); 
             activeIdx = targetI; 
             update(); 
             dragIdx = null;
@@ -231,8 +228,9 @@ function calculateDamage(item, idx) {
     let ap_val = 0, ap_list = [];
     if (gS('y_wp')==='lh') { let v=[0, 24.5, 30.8, 36.4, 42, 49][ref]; ap_val += v/100; ap_list.push(`硫磺石(${v}%)`); }
     if (gS('y_wp')==='xh') { 
-        let hasSup = false; for(let k=0; k<idx; k++) if(queue[k].id==='support') hasSup=true;
-        if(hasSup && item.id!=='support') { let v=[0,12,13.8,15.6,17.4,19.2][ref]; ap_val+=v/100; ap_list.push(`星辉音擎(${v}%)`); }
+        let hasSup = false; 
+        for(let k=0; k<=idx; k++) if(queue[k].id==='support') hasSup=true; // 修改点：使用 <= 包括当前招式
+        if(hasSup) { let v=[0,12,13.8,15.6,17.4,19.2][ref]; ap_val+=v/100; ap_list.push(`星辉音擎(${v}%)`); }
     }
     if (gC('b_ap')) { ap_val+=0.16; ap_list.push("阿炮(16%)"); }
     if (gS('s4_set')==='ry') { ap_val+=0.12; ap_list.push("如影4(12%)"); }

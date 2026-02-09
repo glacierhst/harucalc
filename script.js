@@ -104,6 +104,7 @@ function exportConfig() {
             y_const: gS('y_const'), p_atk: gV('p_atk'), p_cr: gV('p_cr'), p_cd: gV('p_cd'), p_pen_r: gV('p_pen_r'), p_pen_v: gV('p_pen_v'), p_ele_dmg: gV('p_ele_dmg'),
             m_strong: gC('m_strong'), y_wp: gS('y_wp'), y_ref: gS('y_ref'), s4_set: gS('s4_set'),
             env_break: gC('env_break'), env_abnormal: gC('env_abnormal'),
+            e_def: gV('e_def'), e_res: gV('e_res'), e_vun: gV('e_vun'), // 修复：加入敌人属性
             b_yjy: gC('b_yjy'), yjy_atk: gV('yjy_atk'), yjy_const: gS('yjy_const'),
             b_ly: gC('b_ly'), ly_const: gS('ly_const'), ly_ref: gS('ly_ref'), ly_wp_select: gS('ly_wp_select'),
             b_bj: gC('b_bj'), bj_const: gS('bj_const'), bj_ref: gS('bj_ref'), bj_wp_select: gS('bj_wp_select'),
@@ -229,7 +230,7 @@ function calculateDamage(item, idx) {
     if (gS('y_wp')==='lh') { let v=[0, 24.5, 30.8, 36.4, 42, 49][ref]; ap_val += v/100; ap_list.push(`硫磺石(${v}%)`); }
     if (gS('y_wp')==='xh') { 
         let hasSup = false; 
-        for(let k=0; k<=idx; k++) if(queue[k].id==='support') hasSup=true; // 修改点：使用 <= 包括当前招式
+        for(let k=0; k<=idx; k++) if(queue[k].id==='support') hasSup=true;
         if(hasSup) { let v=[0,12,13.8,15.6,17.4,19.2][ref]; ap_val+=v/100; ap_list.push(`星辉音擎(${v}%)`); }
     }
     if (gC('b_ap')) { ap_val+=0.16; ap_list.push("阿炮(16%)"); }
@@ -296,23 +297,29 @@ function calculateDamage(item, idx) {
         if(layers > 0) { db_val += (v * layers)/100; db_list.push(`机巧心种${layers}层(${(v * layers).toFixed(1)}%)`); }
     }
     if (gS('s4_set')==='ht' && item.id === 'zj') { db_val += 0.20; db_list.push("河豚4(20%)"); }
+    
     if (item.id.startsWith('cx') || item.id === 'zl') {
         if (gS('s4_set')==='ry') { db_val += 0.15; db_list.push("如影2(15%)"); }
-        if (cons >= 2 && !item.id.includes('zl')) {
+        if (cons >= 2 && item.id.startsWith('cx') && !item.id.includes('zl')) {
             let lastIdx = -1; for(let k=0; k<idx; k++) if(queue[k].id==='lx' || queue[k].id==='zj') lastIdx=k;
             if(lastIdx !== -1) {
                 let c = 0; for(let m=lastIdx+1; m<idx; m++) if(queue[m].id.startsWith('cx') && !queue[m].isAuto) c++;
                 if(c < 7) { db_val += 0.5; db_list.push(`2命冲刺增伤(50%)`); }
             }
         }
-        if (gS('y_wp')==='cx' && !item.id.includes('zl')) { let v=[0,40,46,52,58,64][ref]; db_val+=v/100; db_list.push(`残心(${v}%)`); }
+        if (gS('y_wp')==='cx' && item.id.startsWith('cx')) { 
+            let v=[0,40,46,52,58,64][ref]; db_val+=v/100; db_list.push(`残心(${v}%)`); 
+        }
     }
     res.dmg = { val: (1+db_val).toFixed(3), formula: `系数 = 1 + ${db_list.join(' + ')} = ${(1+db_val).toFixed(3)}` };
 
     let cr = gV('p_cr'), cd = gV('p_cd'), cr_list = [`面板(${cr}%)`], cd_list = [`面板(${cd}%)`];
     if (gS('s4_set')==='ry') { cr += 12; cr_list.push("如影4(12%)"); }
     if (gC('b_nk')) { cr += 15; cr_list.push("妮可(15%)"); }
-    if ((item.id.startsWith('cx') && !item.isAuto) || (isStrong && item.id==='zj')) { cr += 25; cd += 72; cr_list.push("天赋(25%)"); cd_list.push("天赋(72%)"); }
+    
+    if ((item.id.startsWith('cx') && !item.isAuto) || (isStrong && item.id==='zj') || (isStrong && item.id==='zl')) { 
+        cr += 25; cd += 72; cr_list.push("天赋(25%)"); cd_list.push("天赋(72%)"); 
+    }
     if (gS('y_wp')==='cx') {
         let v=[0,10,11.5,13,14.5,16][ref]; cr+=v; cr_list.push(`残心(${v}%)`);
         if(inBrk || inAbn) { cr+=v; cr_list.push(`残心额外(${v}%)`); }
